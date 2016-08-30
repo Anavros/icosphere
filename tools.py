@@ -7,23 +7,6 @@ import numpy
 from constants import WIDTH, HEIGHT
 
 
-def identity():
-    return numpy.eye(4, dtype=numpy.float32)
-
-
-def point():
-    return numpy.array([
-        (0.0, 0.0),
-    ], dtype=numpy.float32)
-
-
-def square():
-    return numpy.array([
-        (-0.2, +0.2), (+0.2, +0.2),
-        (-0.2, -0.2), (+0.2, -0.2),
-    ], dtype=numpy.float32)
-
-
 def screen_to_world(coords):
     (x, y) = coords
     a = ((x/WIDTH)*2)-1

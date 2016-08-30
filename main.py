@@ -8,6 +8,7 @@ A hearty foray into game development.
 
 # Imports & Boilerplate
 from vispy import app, gloo
+from vispy.gloo import gl
 from vispy.util.transforms import translate, scale, rotate
 import numpy
 app.use_app('glfw')
@@ -21,13 +22,17 @@ def main():
     # Important Variables
     canvas = app.Canvas(title=TITLE, size=SIZE, keys='interactive')
     program = tools.build_program("vertex.glsl", "fragment.glsl")
-    program['a_position'] = gloo.VertexBuffer(tools.square())
     timer = app.Timer()
     held_keys = []
 
+    gl.glEnable(gl.GL_BLEND)
+    gl.glEnable(gl.GL_DEPTH_TEST)
+    gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+    gloo.set_state(clear_color=(1, 1, 1, 1), depth_test=True)
+
     # Event Handling Functions
     def on_draw(event):
-        gloo.clear(CLEAR_COLOR)
+        gloo.clear(color=True, depth=True)
         game.draw(program)
     canvas.connect(on_draw)
 

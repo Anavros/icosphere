@@ -1,48 +1,42 @@
 
 import tools
+import gen
+import numpy
+from vispy.util import transforms
+from vispy import gloo
 
 
 class GameState:
     def __init__(self):
-        """Called once when you make a new GameState().
-        Ex: game = GameState() -> calls __init__()
-        """
-        self.view = tools.identity()
-        self.player = GameObject(tools.square(), tools.identity())
-        self.cursor = GameObject(tools.point(), tools.identity())
-        self.projectiles = []
+        self.view = gen.identity()
 
 class GameObject:
-    def __init__(self, model, place, vector=(0.0, 0.1)):
+    def __init__(self, model, trans):
         self.model = model
-        self.place = place
-        self.vector = vector
+        self.trans = trans
 
-# Global State Variable
-# You can call this variable, and access anything inside of it, from any one of
-# the functions below. Example: game.player_ship ... and so on.
 game = GameState()
+game.thing = GameObject(gen.icosahedron(), gen.identity())
+game.thing.index = gloo.IndexBuffer(gen.ico_index())
+game.thing.color = gen.ico_color()
 
 
 def update(event):
     """Update the game. Called for every frame, usually sixty per second."""
-    for proj in game.projectiles:
-        proj.place = tools.move(proj.place, proj.vector)
 
 
 def draw(program):
-    tools.draw(game.player.model, game.player.place, game.view, program)
-    tools.draw(game.cursor.model, game.cursor.place, game.view, program)
-    for proj in game.projectiles:
-        tools.draw(proj.model, proj.place, game.view, program)
+    program['a_position'] = game.thing.model
+    program['a_coloring'] = game.thing.color
+    program['m_model'] = game.thing.trans
+    program['m_view'] = game.view
+    program.draw('lines', game.thing.index)
 
 
-def left_click(coord):
+def left_click(point):
     """Perform these actions when the left mouse button is clicked."""
     print('left click')
-    game.projectiles.append(GameObject(
-        tools.point(), game.player.place, vector=(0.0, 0.1)))
-    #game.player.place = tools.move(game.player.place, (0.1, 0.1))
+    game.thing.trans = numpy.dot(game.thing.trans, transforms.rotate(15, (0, 1, 1)))
     
 
 def right_click(coord):
@@ -55,17 +49,20 @@ def middle_click(coord):
 
 def left_click_and_drag(start_point, end_point, delta):
     print('left click and drag')
-    game.player.place = tools.move(game.player.place, delta)
+    game.thing.trans = numpy.dot(game.thing.trans,
+        transforms.rotate((0-delta[0]*50), (0, 1, 0)))
+    game.thing.trans = numpy.dot(game.thing.trans,
+        transforms.rotate(delta[1]*50, (1, 0, 0)))
 
 
 def right_click_and_drag(start_point, end_point, delta):
     print('right click and drag')
-    game.player.place = tools.rotate(game.player.place, 90*delta[0])
+    game.thing.trans = numpy.dot(game.thing.trans,
+        transforms.rotate(delta[1]*20, (0, 0, 1)))
 
 
 def middle_click_and_drag(start_point, end_point, delta):
     print('middle click and drag')
-    game.player.place = tools.scale(game.player.place, 1+delta[1])
 
 
 def scroll(point, direction):
@@ -81,7 +78,6 @@ def scroll(point, direction):
 def hover(point):
     """Called when the mouse moves to a new point without holding any buttons."""
     print('hover')
-    game.cursor.place = tools.move(tools.identity(), point)
 
 
 def key_press(key):
