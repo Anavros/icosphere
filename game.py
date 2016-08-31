@@ -1,6 +1,7 @@
 
 import tools
 import gen
+import geometry
 import numpy
 from vispy.util import transforms
 from vispy import gloo
@@ -9,6 +10,7 @@ from vispy import gloo
 class GameState:
     def __init__(self):
         self.view = gen.identity()
+        self.proj = transforms.perspective(90.0, 1.0, 1.0, 20.0)
 
 class GameObject:
     def __init__(self, model, trans):
@@ -17,14 +19,14 @@ class GameObject:
         self.velocity = (0, 0)
 
 game = GameState()
-game.view = tools.scale(game.view, 0.5)
+#game.view = tools.scale(game.view, 0.5)
+game.view = numpy.dot(game.view, transforms.translate((0, 0, -3)))
 
-ico = gen.icosphere()
-ico = gen.refine(ico)
-ico = gen.truncate(ico)
-verts, index = ico.data()
+ico = geometry.icosphere()
+verts, index, lines = ico.triangles()
 game.thing = GameObject(verts, gen.identity())
 game.thing.index = gloo.IndexBuffer(index)
+
 
 
 def damp(n):
@@ -43,10 +45,15 @@ def update(event):
 
 def draw(program):
     program['a_position'] = game.thing.model
-    #program['a_coloring'] = game.thing.color
+    #program['a_coloring'] = color
     program['m_model'] = game.thing.trans
     program['m_view'] = game.view
-    program.draw('lines', game.thing.index)
+    program['m_proj'] = game.proj
+    program['u_color'] = (0.5, 0.6, 0.7)
+    program.draw('triangles', gloo.IndexBuffer(index))
+    program['u_color'] = (0.2, 0.3, 0.4)
+    program.draw('lines', gloo.IndexBuffer(lines))
+    program['u_color'] = (0.0, 0.0, 0.1)
     program.draw('points')
 
 
@@ -96,7 +103,7 @@ def scroll(point, direction):
     direction: either +1 or -1 for scrolling in and out respectively.
     """
     #print('scroll')
-    game.view = tools.scale(game.view, 1+direction/10)
+    game.view = numpy.dot(game.view, transforms.translate((0, 0, direction)))
 
 
 def hover(point):

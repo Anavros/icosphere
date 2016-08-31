@@ -1,92 +1,46 @@
 
 import numpy as np
 
-
-def identity():
-    return np.eye(4, dtype=np.float32)
-
-
-def point():
-    return np.array([
-        (0.0, 0.0),
-    ], dtype=np.float32)
-
-
-def square():
-    return np.array([
-        (-0.2, +0.2), (+0.2, +0.2),
-        (-0.2, -0.2), (+0.2, -0.2),
-    ], dtype=np.float32)
-
-
-def cube(x=1.0):
-    return np.array([
-        (-x, +x, +x), (+x, +x, +x),
-        (-x, -x, +x), (+x, -x, +x),
-        (-x, +x, -x), (+x, +x, -x),
-        (-x, -x, -x), (+x, -x, -x),
-    ], dtype=np.float32)
-
-
-def cube_color():
-    return np.array([
-        (0, 0, 0), (0, 0, 0),
-        (0, 0, 0), (0, 0, 0),
-        (0, 0, 0), (0, 0, 0),
-        (0, 0, 0), (0, 0, 0),
-    ], dtype=np.float32)
-
-
 class Vert:
     def __init__(self, x, y, z):
         self.x = x
         self.y = y
         self.z = z
-
     def __iter__(self):
         for n in [self.x, self.y, self.z]:
             yield n
-
     def __add__(self, x):
         if type(x) is Vert:  # for scalar operations / duck typed ops
             vert = x
         else:
             vert = Vert(x, x, x)
         return Vert(self.x+vert.x, self.y+vert.y, self.z+vert.z)
-
     def __sub__(self, x):
         if type(x) is Vert:
             vert = x
         else:
             vert = Vert(x, x, x)
         return Vert(self.x-vert.x, self.y-vert.y, self.z-vert.z)
-
     def __mul__(self, x):
         if type(x) is Vert:
             vert = x
         else:
             vert = Vert(x, x, x)
         return Vert(self.x*vert.x, self.y*vert.y, self.z*vert.z)
-
     def __truediv__(self, x):
         if type(x) is Vert:
             vert = x
         else:
             vert = Vert(x, x, x)
         return Vert(self.x/vert.x, self.y/vert.y, self.z/vert.z)
-
     def __abs__(self):
         return Vert(abs(self.x), abs(self.y), abs(self.z))
-
     def __sum__(self):
         return self.x+self.y+self.z
-
     def __eq__(self, vert):
         return self.x==vert.x and self.y==vert.y and self.z==vert.z
-
     def __hash__(self):
         return hash((self.x, self.y, self.z))
-
     def __repr__(self):
         return "Vert({:.2f}, {:.2f}, {:.2f})".format(self.x, self.y, self.z)
 
@@ -95,21 +49,16 @@ class Edge:
     def __init__(self, v1, v2):
         self.v1 = v1
         self.v2 = v2
-
     def __iter__(self):
         for n in [self.v1, self.v2]:
             yield n
-
     def __eq__(self, edge):
         return ((self.v1==edge.v1 and self.v2==edge.v2) or
             (self.v1==edge.v2 and self.v2==edge.v1))
-
     def __hash__(self):
         return hash(self.v1)+hash(self.v2)
-
     def __repr__(self):
         return "{} <-> {}".format(self.v1, self.v2)
-
     def includes(self, v):
         return v in [self.v1, self.v2]
 
@@ -126,28 +75,28 @@ class Tri:
     def __init__(self, *args):
         self.verts = set(args)
         # catches duplicate vertices
-        assert len(set) == len(args)
+        assert len(self.verts) == len(args)
 
     def __iter__(self):
-        for v in self.vertices:
+        for v in self.verts:
             yield v
         
     def __hash__(self):
-        return sum([hash(v) for v in self.vs])
+        return sum([hash(v) for v in self.verts])
 
     def __repr__(self):
         return "Tri({}, {}, {})".format(*self.verts)
 
     def includes(self, v):
-        return v in self.vs
+        return v in self.verts
 
     def connects(self, v):
         try:
-            i = self.vs.index(v)
+            i = self.verts.index(v)
         except ValueError:
             return False
         else:
-            return self.vs[i]
+            return self.verts[i]
 
 
 def distance(v1, v2):
@@ -160,36 +109,45 @@ def median(v1, v2, weight=1):
 
 class Geometry:
     def __init__(self):
+        self.verts = set()
         self.edges = set()
         self.faces = set()
 
-    def data(self, method='lines'):
-        v_count = 0
-        i_count = 0
-        verts = np.zeros(shape=(len(self.edges)*2, 3), dtype=np.float32)
-        index = np.zeros(shape=(len(self.edges), 2), dtype=np.uint32)
-        for v1, v2 in self.edges:
-            i1, i2 = v_count, v_count+1
-            verts[i1, :] = tuple(v1)
-            verts[i2, :] = tuple(v2)
-            index[i_count] = (i1, i2)
-            v_count += 2
-            i_count += 1
-        return verts, index
+    def add_face(self, v1, v2, v3):
+        self.faces.add(Tri(v1, v2, v3))
+        self.edges.add(Edge(v1, v2))
+        self.edges.add(Edge(v2, v3))
+        self.edges.add(Edge(v3, v1))
+        self.verts.add(v1)
+        self.verts.add(v2)
+        self.verts.add(v3)
+
+    def add_edge(self, v1, v2):
+        self.edges.add(Edge(v1, v2))
+        self.verts.add(v1)
+        self.verts.add(v2)
+
+    def add_vert(self, v1):
+        self.verts.add(v1)
 
     def triangles(self):
         v_count = 0
         i_count = 0
-        verts = np.zeros(shape=(len(self.edges)*2, 3), dtype=np.float32)
-        index = np.zeros(shape=(len(self.edges), 3), dtype=np.uint32)
-        for v1, v2 in self.edges:
-            i1, i2 = v_count, v_count+1
+        verts = np.zeros(shape=(len(self.faces)*3, 3), dtype=np.float32)
+        index = np.zeros(shape=(len(self.faces), 3), dtype=np.uint32)
+        lines = np.zeros(shape=(len(self.faces)*3, 2), dtype=np.uint32)
+        for v1, v2, v3 in self.faces:
+            i1, i2, i3 = v_count, v_count+1, v_count+2
             verts[i1, :] = tuple(v1)
             verts[i2, :] = tuple(v2)
-            index[i_count] = (i1, i2)
-            v_count += 2
+            verts[i3, :] = tuple(v3)
+            index[i_count] = (i1, i2, i3)
+            lines[i1] = (i1, i2)
+            lines[i2] = (i2, i3)
+            lines[i3] = (i3, i1)
+            v_count += 3
             i_count += 1
-        return verts, index
+        return verts, index, lines
 
     def adjacent_to(self, v):
         return [e.connects(v) for e in self.edges if e.includes(v)]
@@ -217,6 +175,31 @@ class Geometry:
                     (dx, dy, dz) = distance(v1, v2)
                     if all([dx<limit, dy<limit, dz<limit]):
                         self.connect(v1, v2)
+
+
+def icosphere():
+    t = ((1.0 + np.sqrt(5.0))) / 2.0
+    verts = [
+        (-1, t, 0), (1, t, 0), (1, -t, 0), (-1, -t, 0),  # red
+        (0, -1, t), (0, 1, t), (0, 1, -t), (0, -1, -t),  # green
+        (t, 0, -1), (t, 0, 1), (-t, 0, 1), (-t, 0, -1),  # blue
+    ]
+    faces = [
+        (0, 1, 2),
+        (2, 3, 0),
+        (4, 5, 6),
+        (6, 7, 4),
+        (8, 9, 10),
+        (10, 11, 8),
+    ]
+    ico = Geometry()
+    for v1, v2, v3 in faces:
+        x1, y1, z1 = verts[v1]
+        x2, y2, z2 = verts[v2]
+        x3, y3, z3 = verts[v3]
+        ico.add_face(Vert(x1, y1, z1), Vert(x2, y2, z2), Vert(x3, y3, z3))
+    return ico
+
 
 def refine(icosphere):
     new = Geometry()
@@ -259,48 +242,3 @@ def iterate(icosphere):
     return new
 
 
-def icosphere():
-    t = ((1.0 + np.sqrt(5.0))) / 2.0
-    verts = [
-        (-1, t, 0), (1, t, 0), (1, -t, 0), (-1, -t, 0),  # red
-        (0, -1, t), (0, 1, t), (0, 1, -t), (0, -1, -t),  # green
-        (t, 0, -1), (t, 0, 1), (-t, 0, 1), (-t, 0, -1),  # blue
-    ]
-    edges = [
-        (0, 1),
-        (2, 3),
-        (4, 5),
-        (6, 7),
-        (8, 9),
-        (10, 11),
-        (0, 5),
-        (1, 5),
-        (0, 6),
-        (1, 6),
-        (2, 7),
-        (3, 7),
-        (2, 4),
-        (3, 4),
-        (0, 10),
-        (0, 11),
-        (3, 10),
-        (3, 11),
-        (1, 8),
-        (1, 9),
-        (2, 8),
-        (2, 9),
-        (4, 10),
-        (4, 9),
-        (5, 10),
-        (5, 9),
-        (6, 8),
-        (6, 11),
-        (7, 8),
-        (7, 11),
-    ]
-    geo = Geometry()
-    for v1, v2 in edges:
-        x1, y1, z1 = verts[v1]
-        x2, y2, z2 = verts[v2]
-        geo.connect(Vert(x1, y1, z1), Vert(x2, y2, z2))
-    return geo
