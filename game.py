@@ -14,25 +14,31 @@ class GameObject:
     def __init__(self, model, trans):
         self.model = model
         self.trans = trans
+        self.velocity = (0, 0)
 
 game = GameState()
 game.view = tools.scale(game.view, 0.5)
 
 ico = gen.icosphere()
+ico = gen.refine(ico)
+ico = gen.truncate(ico)
 verts, index = ico.data()
 game.thing = GameObject(verts, gen.identity())
 game.thing.index = gloo.IndexBuffer(index)
 
-#game.thing = GameObject(gen.icosahedron(), gen.identity())
-#links = gen.link(game.thing.model)
-#game.thing.model, links = gen.truncate(game.thing.model, links)
-#game.thing.index = gloo.IndexBuffer(gen.links_to_indices(links))
-#game.thing.color = gen.black(game.thing.model)
+
+def damp(n):
+    return n*0.95
 
 
 def update(event):
     """Update the game. Called for every frame, usually sixty per second."""
-    #game.thing.trans = numpy.dot(game.thing.trans, transforms.rotate(0.2, (0.7, 1, 0.3)))
+    vx, vy = game.thing.velocity
+    game.thing.trans = numpy.dot(game.thing.trans,
+        transforms.rotate(vx, (0, 1, 0)))
+    game.thing.trans = numpy.dot(game.thing.trans,
+        transforms.rotate(vy, (1, 0, 0)))
+    game.thing.velocity = damp(vx), damp(vy)
 
 
 def draw(program):
@@ -62,10 +68,11 @@ def middle_click(coord):
 
 def left_click_and_drag(start_point, end_point, delta):
     #print('left click and drag')
-    game.thing.trans = numpy.dot(game.thing.trans,
-        transforms.rotate((0-delta[0]*50), (0, 1, 0)))
-    game.thing.trans = numpy.dot(game.thing.trans,
-        transforms.rotate(delta[1]*50, (1, 0, 0)))
+    game.thing.velocity = (0-delta[0]*100, delta[1]*100)
+    #game.thing.trans = numpy.dot(game.thing.trans,
+        #transforms.rotate((0-delta[0]*50), (0, 1, 0)))
+    #game.thing.trans = numpy.dot(game.thing.trans,
+        #transforms.rotate(delta[1]*50, (1, 0, 0)))
 
 
 def right_click_and_drag(start_point, end_point, delta):
@@ -76,7 +83,10 @@ def right_click_and_drag(start_point, end_point, delta):
 
 def middle_click_and_drag(start_point, end_point, delta):
     #print('middle click and drag')
-    pass
+    game.thing.trans = numpy.dot(game.thing.trans,
+        transforms.rotate((0-delta[0]*50), (0, 1, 0)))
+    game.thing.trans = numpy.dot(game.thing.trans,
+        transforms.rotate(delta[1]*50, (1, 0, 0)))
 
 
 def scroll(point, direction):
