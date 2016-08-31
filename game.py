@@ -16,13 +16,19 @@ class GameObject:
         self.trans = trans
 
 game = GameState()
+game.view = tools.scale(game.view, 0.5)
+
 game.thing = GameObject(gen.icosahedron(), gen.identity())
-game.thing.index = gloo.IndexBuffer(gen.ico_index())
-game.thing.color = gen.ico_color()
+links = gen.link(game.thing.model)
+game.thing.model = gen.truncate(game.thing.model, links)
+links = gen.link_between(game.thing.model, 0.5, 1.1)
+game.thing.index = gloo.IndexBuffer(gen.links_to_indices(links))
+game.thing.color = gen.black(game.thing.model)
 
 
 def update(event):
     """Update the game. Called for every frame, usually sixty per second."""
+    #game.thing.trans = numpy.dot(game.thing.trans, transforms.rotate(0.2, (0.7, 1, 0.3)))
 
 
 def draw(program):
@@ -31,24 +37,27 @@ def draw(program):
     program['m_model'] = game.thing.trans
     program['m_view'] = game.view
     program.draw('lines', game.thing.index)
+    program.draw('points')
 
 
 def left_click(point):
     """Perform these actions when the left mouse button is clicked."""
-    print('left click')
+    #print('left click')
     game.thing.trans = numpy.dot(game.thing.trans, transforms.rotate(15, (0, 1, 1)))
     
 
 def right_click(coord):
-    print('right click')
+    #print('right click')
+    pass
 
 
 def middle_click(coord):
-    print('middle click')
+    #print('middle click')
+    pass
 
 
 def left_click_and_drag(start_point, end_point, delta):
-    print('left click and drag')
+    #print('left click and drag')
     game.thing.trans = numpy.dot(game.thing.trans,
         transforms.rotate((0-delta[0]*50), (0, 1, 0)))
     game.thing.trans = numpy.dot(game.thing.trans,
@@ -56,13 +65,14 @@ def left_click_and_drag(start_point, end_point, delta):
 
 
 def right_click_and_drag(start_point, end_point, delta):
-    print('right click and drag')
+    #print('right click and drag')
     game.thing.trans = numpy.dot(game.thing.trans,
         transforms.rotate(delta[1]*20, (0, 0, 1)))
 
 
 def middle_click_and_drag(start_point, end_point, delta):
-    print('middle click and drag')
+    #print('middle click and drag')
+    pass
 
 
 def scroll(point, direction):
@@ -71,20 +81,20 @@ def scroll(point, direction):
     point: the pair of (a, b) world coordinates showing where the scroll happened.
     direction: either +1 or -1 for scrolling in and out respectively.
     """
-    print('scroll')
+    #print('scroll')
     game.view = tools.scale(game.view, 1+direction/10)
 
 
 def hover(point):
     """Called when the mouse moves to a new point without holding any buttons."""
-    print('hover')
+    #print('hover')
 
 
 def key_press(key):
     """Called once when a key is pressed."""
-    print('key press')
+    #print('key press')
 
 
 def key_hold(keys):
     """Called once every frame while a key is held down."""
-    print('key hold')
+    #print('key hold')
