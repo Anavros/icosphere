@@ -1,5 +1,7 @@
 
 import numpy as np
+import math
+from copy import deepcopy
 
 class Vert:
     def __init__(self, x, y, z):
@@ -72,10 +74,11 @@ class Edge:
 
 
 class Tri:
-    def __init__(self, *args):
-        self.verts = set(args)
+    def __init__(self, v1, v2, v3):
         # catches duplicate vertices
-        assert len(self.verts) == len(args)
+        assert len({v1, v2, v3}) == len([v1, v2, v3])
+        self.verts = {v1, v2, v3}
+        self.edges = {Edge(v1, v2), Edge(v2, v3), Edge(v3, v1)}
 
     def __iter__(self):
         for v in self.verts:
@@ -207,68 +210,44 @@ def icosphere():
         (9, 8, 1),
     ]
     ico = Geometry()
-    for v1, v2, v3 in faces:
-        x1, y1, z1 = verts[v1]
-        x2, y2, z2 = verts[v2]
-        x3, y3, z3 = verts[v3]
-        ico.add_face(Vert(x1, y1, z1), Vert(x2, y2, z2), Vert(x3, y3, z3))
+    for i1, i2, i3 in faces:
+        x1, y1, z1 = verts[i1]
+        x2, y2, z2 = verts[i2]
+        x3, y3, z3 = verts[i3]
+        v1, v2, v3 = Vert(x1, y1, z1), Vert(x2, y2, z2), Vert(x3, y3, z3)
+        v1, v2, v3 = normalize(v1), normalize(v2), normalize(v3)
+        ico.add_face(v1, v2, v3)
     return ico
 
-#addVertex(new Point3D(-1,  t,  0));
-#addVertex(new Point3D( 1,  t,  0));
-#addVertex(new Point3D(-1, -t,  0));
-#addVertex(new Point3D( 1, -t,  0));
 
-#addVertex(new Point3D( 0, -1,  t));
-#addVertex(new Point3D( 0,  1,  t));
-#addVertex(new Point3D( 0, -1, -t));
-#addVertex(new Point3D( 0,  1, -t));
-
-#addVertex(new Point3D( t,  0, -1));
-#addVertex(new Point3D( t,  0,  1));
-#addVertex(new Point3D(-t,  0, -1));
-#addVertex(new Point3D(-t,  0,  1));
-
-
-
-def refine(icosphere):
-    new = Geometry()
-    new.edges = icosphere.edges
-    midpoints = []
-    for v1 in new.vertices():
-        for v2 in new.adjacent_to(v1):
-            m = median(v1, v2)
-            new.connect(m, v1)
-            midpoints.append(m)
-    new.connect_all(midpoints, limit=1.1)
+def refine(old):
+    new = deepcopy(old)
+    for face in old.faces:
+        midpoints = []
+        for edge in face.edges:
+            midpoint = median(edge.v1, edge.v2)
+            midpoint = normalize(midpoint)
+            midpoints.append(midpoint)
+        #print(len(midpoints))
+        assert len(midpoints) == 3
+        (m1, m2, m3) = midpoints
+        new.add_face(m1, m2, m3)
     return new
 
 
-def truncate(icosphere):
-    new = Geometry()
-    old_verts = icosphere.vertices()
-    for v1 in old_verts:
-        ms = []
-        for v2 in icosphere.adjacent_to(v1):
-            m1 = median(v1, v2, 2)
-            m2 = median(v2, v1, 2)
-            ms.append(m1)
-            new.connect(m1, m2)
-        new.connect_all(ms, limit=0.4)
-    new.cull_all(old_verts)
+def truncate(ico):
+    new = deepcopy(old)
+    for face in old.faces:
+        midpoints = []
+        for edge in face.edges:
+            m1 = median(edge.v1, edge.v2, weight=2)
+            m2 = median(edge.v2, edge.v1, weight=2)
+            midpoints.append(m1)
+            midpoints.append(m2)
+        (ma, mb, mc) = midpoints
     return new
 
 
-def iterate(icosphere):
-    new = Geometry()
-    for v1 in icosphere.vertices():
-        for v2 in icosphere.adjacent_to(v1):
-            m1 = median(v1, v2)
-            new.connect(m1, v1)
-            for va in icosphere.adjacent_to(v2):
-                for vb in icosphere.adjacent_to(v2):
-                    m2 = median(va, vb)
-                    #new.connect(m2, va)
-    return new
-
-
+def normalize(v):
+    mag = math.sqrt(sum(v*v))
+    return v/mag

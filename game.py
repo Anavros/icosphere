@@ -23,6 +23,7 @@ game = GameState()
 game.view = numpy.dot(game.view, transforms.translate((0, 0, -6)))
 
 ico = geometry.icosphere()
+ico = geometry.refine(ico)
 verts, index, lines = ico.triangles()
 game.thing = GameObject(verts, gen.identity())
 game.thing.index = gloo.IndexBuffer(index)
