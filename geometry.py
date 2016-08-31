@@ -2,6 +2,7 @@
 import numpy as np
 import math
 from copy import deepcopy
+import random
 
 class Vert:
     def __init__(self, x, y, z):
@@ -61,45 +62,18 @@ class Edge:
         return hash(self.v1)+hash(self.v2)
     def __repr__(self):
         return "{} <-> {}".format(self.v1, self.v2)
-    def includes(self, v):
-        return v in [self.v1, self.v2]
-
-    def connects(self, v):
-        if v == self.v1:
-            return self.v2
-        elif v == self.v2:
-            return self.v1
-        else:
-            return False
 
 
-class Tri:
-    def __init__(self, v1, v2, v3):
-        # catches duplicate vertices
-        assert len({v1, v2, v3}) == len([v1, v2, v3])
-        self.verts = {v1, v2, v3}
-        self.edges = {Edge(v1, v2), Edge(v2, v3), Edge(v3, v1)}
-
+class Face:
+    def __init__(self, *args):
+        self.verts = args
     def __iter__(self):
         for v in self.verts:
             yield v
-        
     def __hash__(self):
         return sum([hash(v) for v in self.verts])
-
-    def __repr__(self):
-        return "Tri({}, {}, {})".format(*self.verts)
-
-    def includes(self, v):
-        return v in self.verts
-
-    def connects(self, v):
-        try:
-            i = self.verts.index(v)
-        except ValueError:
-            return False
-        else:
-            return self.verts[i]
+    def __len__(self):
+        return len(self.verts)
 
 
 def distance(v1, v2):
@@ -110,104 +84,72 @@ def median(v1, v2, weight=1):
     return ((v1*weight)+v2)/(weight+1)
 
 
+def center(v1, v2, v3):
+    return (v1+v2+v3)/3
+
+
 class Geometry:
     def __init__(self):
-        self.verts = set()
-        self.edges = set()
+        #self.verts = set()
+        #self.edges = set()
         self.faces = set()
 
-    def add_face(self, v1, v2, v3):
-        self.faces.add(Tri(v1, v2, v3))
-        self.edges.add(Edge(v1, v2))
-        self.edges.add(Edge(v2, v3))
-        self.edges.add(Edge(v3, v1))
-        self.verts.add(v1)
-        self.verts.add(v2)
-        self.verts.add(v3)
+        self.counts = {}
+        self.n_triangles = 0
+        self.n_verts = 0
 
-    def add_edge(self, v1, v2):
-        self.edges.add(Edge(v1, v2))
-        self.verts.add(v1)
-        self.verts.add(v2)
-
-    def add_vert(self, v1):
-        self.verts.add(v1)
+    def add(self, *args):
+        n = len(args)
+        try:
+            self.counts[n] += 1
+        except KeyError:
+            self.counts[n] = 1
+        self.n_triangles += (1 if n==3 else 2 if n==4 else n)
+        self.n_verts += n
+        self.faces.add(Face(*args))
 
     def triangles(self):
         v_count = 0
         i_count = 0
-        verts = np.zeros(shape=(len(self.faces)*3, 3), dtype=np.float32)
-        index = np.zeros(shape=(len(self.faces), 3), dtype=np.uint32)
-        lines = np.zeros(shape=(len(self.faces)*3, 2), dtype=np.uint32)
-        for v1, v2, v3 in self.faces:
-            i1, i2, i3 = v_count, v_count+1, v_count+2
-            verts[i1, :] = tuple(v1)
-            verts[i2, :] = tuple(v2)
-            verts[i3, :] = tuple(v3)
-            index[i_count] = (i1, i2, i3)
-            lines[i1] = (i1, i2)
-            lines[i2] = (i2, i3)
-            lines[i3] = (i3, i1)
-            v_count += 3
-            i_count += 1
+        verts = np.zeros(shape=(self.n_verts, 3), dtype=np.float32)
+        index = np.zeros(shape=(self.n_triangles, 3), dtype=np.uint32)
+        lines = np.zeros(shape=(self.n_verts, 2), dtype=np.uint32)
+        for face in self.faces:
+            if len(face) == 3:
+                v1, v2, v3 = face.verts
+                i1, i2, i3 = v_count, v_count+1, v_count+2
+                verts[i1, :] = tuple(v1)
+                verts[i2, :] = tuple(v2)
+                verts[i3, :] = tuple(v3)
+                index[i_count] = (i1, i2, i3)
+                lines[i1] = (i1, i2)
+                lines[i2] = (i2, i3)
+                lines[i3] = (i3, i1)
+                v_count += 3
+                i_count += 1
+            else:
+                raise ValueError("Weird face! {} sides!".format(len(face)))
         return verts, index, lines
-
-    def adjacent_to(self, v):
-        return [e.connects(v) for e in self.edges if e.includes(v)]
-
-    def vertices(self):
-        return set([v for e in self.edges for v in list(e)])
-
-    def cull(self, v):
-        self.edges = self.edges - set([e for e in self.edges if e.includes(v)])
-
-    def cull_all(self, vs):
-        for v in vs:
-            self.cull(v)
-
-    def connect(self, v1, v2):
-        self.edges.add(Edge(v1, v2))
-
-    def connect_all(self, verts, limit=None):
-        for v1 in verts:
-            for v2 in verts:
-                if v1==v2: continue
-                if not limit:
-                    self.connect(v1, v2)
-                else:
-                    (dx, dy, dz) = distance(v1, v2)
-                    if all([dx<limit, dy<limit, dz<limit]):
-                        self.connect(v1, v2)
 
 
 def icosphere():
     t = ((1.0 + np.sqrt(5.0))) / 2.0
     verts = [
-        (-1, t, 0), (1, t, 0), (-1, -t, 0), (1, -t, 0),  # red
-        (0, -1, t), (0, 1, t), (0, -1, -t), (0, 1, -t),  # green
-        (t, 0, -1), (t, 0, 1), (-t, 0, -1), (-t, 0, 1),  # blue
+        (-1, t, 0), (1, t, 0), (-1, -t, 0), (1, -t, 0),
+        (0, -1, t), (0, 1, t), (0, -1, -t), (0, 1, -t),
+        (t, 0, -1), (t, 0, 1), (-t, 0, -1), (-t, 0, 1),
     ]
     faces = [
-        (0, 11, 5),
-        (0, 5, 1),
-        (0, 1, 7),
-        (0, 7, 10),
-        (0, 10, 11),
-        (1, 5, 9),
-        (5, 11, 4),
-        (11, 10, 2),
-        (10, 7, 6),
-        (7, 1, 8),
-        (3, 9, 4),
-        (3, 4, 2),
-        (3, 2, 6),
-        (3, 6, 8),
-        (3, 8, 9),
-        (4, 9, 5),
-        (2, 4, 11),
-        (6, 2, 10),
-        (8, 6, 7),
-        (9, 8, 1),
+        (0, 11, 5), (0, 5, 1),
+        (0, 1, 7), (0, 7, 10),
+        (0, 10, 11), (1, 5, 9),
+        (5, 11, 4), (11, 10, 2),
+        (10, 7, 6), (7, 1, 8),
+        (3, 9, 4), (3, 4, 2),
+        (3, 2, 6), (3, 6, 8),
+        (3, 8, 9), (4, 9, 5),
+        (2, 4, 11), (6, 2, 10),
+        (8, 6, 7), (9, 8, 1),
     ]
     ico = Geometry()
     for i1, i2, i3 in faces:
@@ -216,50 +158,82 @@ def icosphere():
         x3, y3, z3 = verts[i3]
         v1, v2, v3 = Vert(x1, y1, z1), Vert(x2, y2, z2), Vert(x3, y3, z3)
         v1, v2, v3 = normalize(v1), normalize(v2), normalize(v3)
-        ico.add_face(v1, v2, v3)
+        ico.add(v1, v2, v3)
     return ico
 
-def near(v, a, b, c):
-    d = {m:sum(distance(v, m)) for m in [a, b, c]}
-    l = sorted(d.items(), key=lambda x: x[1])
-    return l[0][0], l[1][0]
 
 def refine(old, norm=True):
     new = Geometry()
-        
     for face in old.faces:
-        midpoints = []
-        e1, e2, e3 = face.edges
-        m1 = median(e1.v1, e1.v2)
-        m2 = median(e2.v1, e2.v2)
-        m3 = median(e3.v1, e3.v2)
+        v1, v2, v3 = face.verts
+        m1 = median(v1, v2)
+        m2 = median(v2, v3)
+        m3 = median(v3, v1)
         if norm:
-            m1 = normalize(m1)
-            m2 = normalize(m2)
-            m3 = normalize(m3)
-        #new.add_face(e1.v1, m1, m2)
-        #new.add_face(e2.v1, m2, m3)
-        #new.add_face(e3.v1, m3, m1)
-        new.add_face(e1.v1, *near(e1.v1, m1, m2, m3))
-        new.add_face(e2.v1, *near(e2.v1, m1, m2, m3))
-        new.add_face(e3.v1, *near(e3.v1, m1, m2, m3))
-        new.add_face(m1, m2, m3)
+            m1 = normalize(m1, 1)
+            m2 = normalize(m2, 1)
+            m3 = normalize(m3, 1)
+        new.add(v1, *near(v1, m1, m2, m3))
+        new.add(v2, *near(v2, m1, m2, m3))
+        new.add(v3, *near(v3, m1, m2, m3))
+        new.add(m1, m2, m3)
     return new
 
 
-def truncate(ico):
-    new = deepcopy(old)
+def extrude(old):
+    new = Geometry()
     for face in old.faces:
-        midpoints = []
-        for edge in face.edges:
-            m1 = median(edge.v1, edge.v2, weight=2)
-            m2 = median(edge.v2, edge.v1, weight=2)
-            midpoints.append(m1)
-            midpoints.append(m2)
-        (ma, mb, mc) = midpoints
+        v1, v2, v3 = face.verts
+        if random.uniform(0, 1) < 0.5:
+            delta = random.choice([1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8])
+            d1, d2, d3 = normalize(v1, delta), normalize(v2, delta), normalize(v3, delta)
+            new.add(v1, v2, v3)
+            new.add(d1, d2, d3)
+
+            new.add(v1, d1, v2)
+            new.add(d2, d1, v2)
+            new.add(v2, d2, v3)
+            new.add(d3, d2, v3)
+            new.add(v3, d3, v1)
+            new.add(d1, d3, v1)
+        else:
+            new.add(v1, v2, v3)
     return new
 
 
-def normalize(v):
-    mag = math.sqrt(sum(v*v))
-    return v/mag
+def truncate(old):
+    new = Geometry()
+    for face in old.faces:
+        v1, v2, v3 = face.verts
+        
+        cen = center(face.v1, face.v2, face.v3)
+        m1a = median(v1, v2, weight=2)
+        m1b = median(v2, v1, weight=2)
+        m2a = median(v2, v3, weight=2)
+        m2b = median(v3, v2, weight=2)
+        m3a = median(v3, v1, weight=2)
+        m3b = median(v1, v3, weight=2)
+
+        new.add(cen, m1a, m1b, m2a, m2b, m3a, m3b)
+
+        new.add_face(e1.v1, *near(e1.v1, m1a, m1b, m2a, m2b, m3a, m3b))
+        new.add_face(e2.v1, *near(e2.v1, m1a, m1b, m2a, m2b, m3a, m3b))
+        new.add_face(e3.v1, *near(e3.v1, m1a, m1b, m2a, m2b, m3a, m3b))
+        new.add_face(cen, m1a, m1b)
+        new.add_face(cen, m2a, m2b)
+        new.add_face(cen, m3a, m3b)
+
+        #new.add_face(cen, m1a, m2b)
+        #new.add_face(cen, m2a, m3b)
+        #new.add_face(cen, m3a, m1b)
+    return new
+
+
+def normalize(v, height=1):
+    l = math.sqrt(sum(v*v))
+    return (v*height)/l
+
+def near(v, *args):
+    d = {m:sum(distance(v, m)) for m in args}
+    l = sorted(d.items(), key=lambda x: x[1])
+    return l[0][0], l[1][0]
