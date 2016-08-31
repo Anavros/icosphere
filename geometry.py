@@ -219,18 +219,30 @@ def icosphere():
         ico.add_face(v1, v2, v3)
     return ico
 
+def near(v, a, b, c):
+    d = {m:sum(distance(v, m)) for m in [a, b, c]}
+    l = sorted(d.items(), key=lambda x: x[1])
+    return l[0][0], l[1][0]
 
-def refine(old):
+def refine(old, norm=True):
     new = Geometry()
+        
     for face in old.faces:
         midpoints = []
         e1, e2, e3 = face.edges
-        m1 = normalize(median(e1.v1, e1.v2))
-        m2 = normalize(median(e2.v1, e2.v2))
-        m3 = normalize(median(e3.v1, e3.v2))
-        new.add_face(e1.v1, m1, m2)
-        new.add_face(e2.v1, m2, m3)
-        new.add_face(e3.v1, m3, m1)
+        m1 = median(e1.v1, e1.v2)
+        m2 = median(e2.v1, e2.v2)
+        m3 = median(e3.v1, e3.v2)
+        if norm:
+            m1 = normalize(m1)
+            m2 = normalize(m2)
+            m3 = normalize(m3)
+        #new.add_face(e1.v1, m1, m2)
+        #new.add_face(e2.v1, m2, m3)
+        #new.add_face(e3.v1, m3, m1)
+        new.add_face(e1.v1, *near(e1.v1, m1, m2, m3))
+        new.add_face(e2.v1, *near(e2.v1, m1, m2, m3))
+        new.add_face(e3.v1, *near(e3.v1, m1, m2, m3))
         new.add_face(m1, m2, m3)
     return new
 
