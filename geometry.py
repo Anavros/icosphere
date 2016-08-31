@@ -180,17 +180,31 @@ class Geometry:
 def icosphere():
     t = ((1.0 + np.sqrt(5.0))) / 2.0
     verts = [
-        (-1, t, 0), (1, t, 0), (1, -t, 0), (-1, -t, 0),  # red
-        (0, -1, t), (0, 1, t), (0, 1, -t), (0, -1, -t),  # green
-        (t, 0, -1), (t, 0, 1), (-t, 0, 1), (-t, 0, -1),  # blue
+        (-1, t, 0), (1, t, 0), (-1, -t, 0), (1, -t, 0),  # red
+        (0, -1, t), (0, 1, t), (0, -1, -t), (0, 1, -t),  # green
+        (t, 0, -1), (t, 0, 1), (-t, 0, -1), (-t, 0, 1),  # blue
     ]
     faces = [
-        (0, 1, 2),
-        (2, 3, 0),
-        (4, 5, 6),
-        (6, 7, 4),
-        (8, 9, 10),
-        (10, 11, 8),
+        (0, 11, 5),
+        (0, 5, 1),
+        (0, 1, 7),
+        (0, 7, 10),
+        (0, 10, 11),
+        (1, 5, 9),
+        (5, 11, 4),
+        (11, 10, 2),
+        (10, 7, 6),
+        (7, 1, 8),
+        (3, 9, 4),
+        (3, 4, 2),
+        (3, 2, 6),
+        (3, 6, 8),
+        (3, 8, 9),
+        (4, 9, 5),
+        (2, 4, 11),
+        (6, 2, 10),
+        (8, 6, 7),
+        (9, 8, 1),
     ]
     ico = Geometry()
     for v1, v2, v3 in faces:
@@ -199,6 +213,22 @@ def icosphere():
         x3, y3, z3 = verts[v3]
         ico.add_face(Vert(x1, y1, z1), Vert(x2, y2, z2), Vert(x3, y3, z3))
     return ico
+
+#addVertex(new Point3D(-1,  t,  0));
+#addVertex(new Point3D( 1,  t,  0));
+#addVertex(new Point3D(-1, -t,  0));
+#addVertex(new Point3D( 1, -t,  0));
+
+#addVertex(new Point3D( 0, -1,  t));
+#addVertex(new Point3D( 0,  1,  t));
+#addVertex(new Point3D( 0, -1, -t));
+#addVertex(new Point3D( 0,  1, -t));
+
+#addVertex(new Point3D( t,  0, -1));
+#addVertex(new Point3D( t,  0,  1));
+#addVertex(new Point3D(-t,  0, -1));
+#addVertex(new Point3D(-t,  0,  1));
+
 
 
 def refine(icosphere):

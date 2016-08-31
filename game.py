@@ -10,7 +10,7 @@ from vispy import gloo
 class GameState:
     def __init__(self):
         self.view = gen.identity()
-        self.proj = transforms.perspective(90.0, 1.0, 1.0, 20.0)
+        self.proj = transforms.perspective(45.0, 1.0, 1.0, 20.0)
 
 class GameObject:
     def __init__(self, model, trans):
@@ -20,7 +20,7 @@ class GameObject:
 
 game = GameState()
 #game.view = tools.scale(game.view, 0.5)
-game.view = numpy.dot(game.view, transforms.translate((0, 0, -3)))
+game.view = numpy.dot(game.view, transforms.translate((0, 0, -6)))
 
 ico = geometry.icosphere()
 verts, index, lines = ico.triangles()
@@ -60,7 +60,7 @@ def draw(program):
 def left_click(point):
     """Perform these actions when the left mouse button is clicked."""
     #print('left click')
-    game.thing.trans = numpy.dot(game.thing.trans, transforms.rotate(15, (0, 1, 1)))
+    #game.thing.trans = numpy.dot(game.thing.trans, transforms.rotate(15, (0, 1, 1)))
     
 
 def right_click(coord):
@@ -75,7 +75,7 @@ def middle_click(coord):
 
 def left_click_and_drag(start_point, end_point, delta):
     #print('left click and drag')
-    game.thing.velocity = (0-delta[0]*100, delta[1]*100)
+    game.thing.velocity = (delta[0]*100, 0-delta[1]*100)
     #game.thing.trans = numpy.dot(game.thing.trans,
         #transforms.rotate((0-delta[0]*50), (0, 1, 0)))
     #game.thing.trans = numpy.dot(game.thing.trans,
@@ -85,15 +85,15 @@ def left_click_and_drag(start_point, end_point, delta):
 def right_click_and_drag(start_point, end_point, delta):
     #print('right click and drag')
     game.thing.trans = numpy.dot(game.thing.trans,
-        transforms.rotate(delta[1]*20, (0, 0, 1)))
+        transforms.rotate(delta[1]*50, (0, 0, 1)))
 
 
 def middle_click_and_drag(start_point, end_point, delta):
     #print('middle click and drag')
     game.thing.trans = numpy.dot(game.thing.trans,
-        transforms.rotate((0-delta[0]*50), (0, 1, 0)))
+        transforms.rotate(delta[0]*50, (0, 1, 0)))
     game.thing.trans = numpy.dot(game.thing.trans,
-        transforms.rotate(delta[1]*50, (1, 0, 0)))
+        transforms.rotate((0-delta[1])*50, (1, 0, 0)))
 
 
 def scroll(point, direction):
