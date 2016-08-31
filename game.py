@@ -24,7 +24,6 @@ game.view = numpy.dot(game.view, transforms.translate((0, 0, -6)))
 
 ico = geometry.icosphere()
 ico = geometry.refine(ico, True)
-ico = geometry.refine(ico, True)
 ico = geometry.extrude(ico)
 verts, index, lines = ico.triangles()
 game.thing = GameObject(verts, gen.identity())

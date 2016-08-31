@@ -185,9 +185,9 @@ def extrude(old):
     for face in old.faces:
         v1, v2, v3 = face.verts
         if random.uniform(0, 1) < 0.5:
-            delta = random.choice([1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8])
+            delta = random.choice([1.2, 1.3, 1.5])
             d1, d2, d3 = normalize(v1, delta), normalize(v2, delta), normalize(v3, delta)
-            new.add(v1, v2, v3)
+            #new.add(v1, v2, v3)
             new.add(d1, d2, d3)
 
             new.add(v1, d1, v2)
