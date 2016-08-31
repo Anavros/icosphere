@@ -221,16 +221,16 @@ def icosphere():
 
 
 def refine(old):
-    new = deepcopy(old)
+    new = Geometry()
     for face in old.faces:
         midpoints = []
-        for edge in face.edges:
-            midpoint = median(edge.v1, edge.v2)
-            midpoint = normalize(midpoint)
-            midpoints.append(midpoint)
-        #print(len(midpoints))
-        assert len(midpoints) == 3
-        (m1, m2, m3) = midpoints
+        e1, e2, e3 = face.edges
+        m1 = normalize(median(e1.v1, e1.v2))
+        m2 = normalize(median(e2.v1, e2.v2))
+        m3 = normalize(median(e3.v1, e3.v2))
+        new.add_face(e1.v1, m1, m2)
+        new.add_face(e2.v1, m2, m3)
+        new.add_face(e3.v1, m3, m1)
         new.add_face(m1, m2, m3)
     return new
 
