@@ -91,19 +91,217 @@ def link_between(verts, a, b):
     return links
 
 
+class Vert:
+    def __init__(self, x, y, z, i=None):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.i = i
+
+    def __iter__(self):
+        for n in [self.x, self.y, self.z]:
+            yield n
+
+    def __eq__(self, vert):
+        return self.x==vert.x and self.y==vert.y and self.z==vert.z
+
+    def __hash__(self):
+        return hash((self.x, self.y, self.z))
+
+
+class Edge:
+    def __init__(self, v1, v2):
+        self.v1 = v1
+        self.v2 = v2
+
+    def __iter__(self):
+        for n in [self.v1, self.v2]:
+            yield n
+
+    def __eq__(self, edge):
+        return ((self.v1==edge.v1 and self.v2==edge.v2) or
+            (self.v1==edge.v2 and self.v2==edge.v1))
+
+    def __hash__(self):
+        return hash(self.v1)+hash(self.v2)
+
+
+class Geometry:
+    def __init__(self):
+        self.edges = set()
+
+    def connect(self, v1, v2):
+        self.edges.add(Edge(v1, v2))
+
+    def data(self):
+        v_count = 0
+        i_count = 0
+        verts = np.zeros(shape=(len(self.edges)*2, 3), dtype=np.float32)
+        index = np.zeros(shape=(len(self.edges), 2), dtype=np.uint32)
+        for v1, v2 in self.edges:
+            i1, i2 = v_count, v_count+1
+            verts[i1, :] = tuple(v1)
+            verts[i2, :] = tuple(v2)
+            index[i_count] = (i1, i2)
+            v_count += 2
+            i_count += 1
+        return verts, index
+
+
+def icosphere():
+    t = ((1.0 + np.sqrt(5.0))) / 2.0
+    verts = [
+        (-1, t, 0), (1, t, 0), (1, -t, 0), (-1, -t, 0),  # red
+        (0, -1, t), (0, 1, t), (0, 1, -t), (0, -1, -t),  # green
+        (t, 0, -1), (t, 0, 1), (-t, 0, 1), (-t, 0, -1),  # blue
+    ]
+    edges = [
+        (0, 1),
+        (2, 3),
+        (4, 5),
+        (6, 7),
+        (8, 9),
+        (10, 11),
+        (0, 5),
+        (1, 5),
+        (0, 6),
+        (1, 6),
+        (2, 7),
+        (3, 7),
+        (2, 4),
+        (3, 4),
+        (0, 10),
+        (0, 11),
+        (3, 10),
+        (3, 11),
+        (1, 8),
+        (1, 9),
+        (2, 8),
+        (2, 9),
+        (4, 10),
+        (4, 9),
+        (5, 10),
+        (5, 9),
+        (6, 8),
+        (6, 11),
+        (7, 8),
+        (7, 11),
+    ]
+    geo = Geometry()
+    for v1, v2 in edges:
+        geo.connect(verts[v1], verts[v2])
+    return geo
+
+
+def ico_color():
+    return np.array([
+        (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0),
+        (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0),
+        (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1),
+    ], dtype=np.float32)
+
+
+def ico_index(method='lines'):
+    if method == 'lines':
+        return np.array([
+            0, 1,
+#            1, 2,
+            2, 3,
+#            3, 0,
+#
+            4, 5,
+#            5, 6,
+            6, 7,
+#            7, 4,
+#
+            8, 9,
+#            9, 10,
+            10, 11,
+#            11, 8,
+
+            0, 5,
+            1, 5,
+            0, 6,
+            1, 6,
+            2, 7,
+            3, 7,
+            2, 4,
+            3, 4,
+
+            0, 10,
+            0, 11,
+            3, 10,
+            3, 11,
+            1, 8,
+            1, 9,
+            2, 8,
+            2, 9,
+
+            4, 10,
+            4, 9,
+            5, 10,
+            5, 9,
+            6, 8,
+            6, 11,
+            7, 8,
+            7, 11,
+        ], dtype=np.uint32)
+
+#verts, index = ico.data('triangles')
+
+def fantasy(icosphere):
+    new = Geometry()
+    for v1 in icosphere.verts:
+        first, last = None, None
+        for v2 in icosphere.edges[v1]:
+            midpoint = median(v1, v2, weight=2)
+            new.add(midpoint)
+            new.connect(midpoint, v2)
+            if first is None:
+                first = midpoint
+            if last is not None:
+                new.connect(midpoint, last)
+        new.connect(midpoint, first) # whatever midpoint is set to during last loop
+    return new
+
+
 def truncate(verts, links):
     new_links = {}
-    new_verts = []
-    vert_count = 0
+    new_verts = np.zeros((len(verts)*5, 3), dtype=np.float32)
+    pointer = 0
     for i1, linkset in links.items():
+        v1 = verts[i1]
+        # for every one of these, we'll end up with 5 new ones
+        # unless there are hexes
+        # in which case we'll get 6? Actually, every vertex
+        # after the first truncation has three connections
+        first_midpoint = None
+        last_midpoint = None
         for i2 in linkset:
-            v1 = verts[i1]
             v2 = verts[i2]
             mp = median(v1, v2, weight=2)
-            new_verts.append(mp)
-            vert_count += 1
-            #new_links[vert_count] = links[v1]
-    return np.array(new_verts, dtype=np.float32)
+            new_verts[pointer] = mp # 0
+            # index of v2 is # 1
+            # index of ?
+            pointer += 1
+
+            new_links[mp] = set()
+            new_links[mp].add(v2)
+            if last_midpoint is not None:
+                if first_midpoint is None:
+                    first_midpoint = mp
+                new_links[mp].add(last_midpoint)
+                last_midpoint = mp
+        new_links[mp].add(first_midpoint)
+
+    render = {}
+    for l1, lns in new_links.items():
+        i1 = new_verts.index(l1)
+        render[i1] = set()
+        for l2 in lns:
+            i2 = new_verts.index(l2)
+            render[i1].add(i2)
+    return np.array(new_verts, dtype=np.float32), render
 
 
 def black(verts):

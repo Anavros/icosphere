@@ -12,7 +12,7 @@ vec4 gradient(void) {
 }
 
 void main(void) {
-    //gl_FragColor = vec4(0.5, 0.6, 0.9, 1);
-    gl_FragColor = vec4(v_coloring, 1);
+    gl_FragColor = vec4(0.5, 0.6, 0.9, 1);
+    //gl_FragColor = vec4(v_coloring, 1);
     //gl_FragColor = gradient();
 }
