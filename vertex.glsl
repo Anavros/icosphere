@@ -10,6 +10,6 @@ uniform vec3 u_color;
 
 void main(void) {
     gl_Position = m_proj * m_view * m_model * vec4(a_position, 1.0);
-    gl_PointSize = 5.0;
+    gl_PointSize = 2.5;
     v_coloring = a_coloring;
 }

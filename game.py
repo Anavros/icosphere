@@ -22,10 +22,10 @@ game = GameState()
 #game.view = tools.scale(game.view, 0.5)
 game.view = numpy.dot(game.view, transforms.translate((0, 0, -6)))
 
-ico = geometry.icosphere()
-ico = geometry.refine(ico, True)
-ico = geometry.extrude(ico)
-verts, index, lines = ico.triangles()
+#planet = geometry.TriPlanet()
+planet = geometry.HexPlanet()
+#planet.refine()
+verts, index, lines, color = planet.render()
 game.thing = GameObject(verts, gen.identity())
 game.thing.index = gloo.IndexBuffer(index)
 
@@ -47,7 +47,7 @@ def update(event):
 
 def draw(program):
     program['a_position'] = game.thing.model
-    #program['a_coloring'] = color
+    program['a_coloring'] = color
     program['m_model'] = game.thing.trans
     program['m_view'] = game.view
     program['m_proj'] = game.proj

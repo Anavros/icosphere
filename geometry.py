@@ -13,28 +13,16 @@ class Vert:
         for n in [self.x, self.y, self.z]:
             yield n
     def __add__(self, x):
-        if type(x) is Vert:  # for scalar operations / duck typed ops
-            vert = x
-        else:
-            vert = Vert(x, x, x)
+        vert = x if type(x) is Vert else Vert(x, x, x)
         return Vert(self.x+vert.x, self.y+vert.y, self.z+vert.z)
     def __sub__(self, x):
-        if type(x) is Vert:
-            vert = x
-        else:
-            vert = Vert(x, x, x)
+        vert = x if type(x) is Vert else Vert(x, x, x)
         return Vert(self.x-vert.x, self.y-vert.y, self.z-vert.z)
     def __mul__(self, x):
-        if type(x) is Vert:
-            vert = x
-        else:
-            vert = Vert(x, x, x)
+        vert = x if type(x) is Vert else Vert(x, x, x)
         return Vert(self.x*vert.x, self.y*vert.y, self.z*vert.z)
     def __truediv__(self, x):
-        if type(x) is Vert:
-            vert = x
-        else:
-            vert = Vert(x, x, x)
+        vert = x if type(x) is Vert else Vert(x, x, x)
         return Vert(self.x/vert.x, self.y/vert.y, self.z/vert.z)
     def __abs__(self):
         return Vert(abs(self.x), abs(self.y), abs(self.z))
@@ -46,6 +34,9 @@ class Vert:
         return hash((self.x, self.y, self.z))
     def __repr__(self):
         return "Vert({:.2f}, {:.2f}, {:.2f})".format(self.x, self.y, self.z)
+    def normalize(self):
+        length = math.sqrt(sum(self*self))
+        return Vert(self.x, self.y, self.z)/length
 
 
 class Edge:
@@ -65,8 +56,9 @@ class Edge:
 
 
 class Face:
-    def __init__(self, *args):
+    def __init__(self, *args, tags=None):
         self.verts = args
+        self.tags = tags if tags is not None else []
     def __iter__(self):
         for v in self.verts:
             yield v
@@ -74,6 +66,16 @@ class Face:
         return sum([hash(v) for v in self.verts])
     def __len__(self):
         return len(self.verts)
+
+
+class Triangle(Face):
+    pass
+
+class Pentagon(Face):
+    pass
+
+class Hexagon(Face):
+    pass
 
 
 def distance(v1, v2):
@@ -94,42 +96,372 @@ class Geometry:
         #self.edges = set()
         self.faces = set()
 
+        self.tops = set()
+        self.sides = set()
+
+        self.hexes = set()
+
         self.counts = {}
         self.n_triangles = 0
         self.n_verts = 0
 
-    def add(self, *args):
-        n = len(args)
-        try:
-            self.counts[n] += 1
-        except KeyError:
-            self.counts[n] = 1
-        self.n_triangles += (1 if n==3 else 2 if n==4 else n)
-        self.n_verts += n
-        self.faces.add(Face(*args))
+    def add(self, v1, v2, v3, top=True):
+        face = Face(v1, v2, v3, top=top)
+        self.faces.add(face)
+        if top:
+            self.tops.add(face)
+        else:
+            self.sides.add(face)
+
+    def add_hex(self, v1, v2, v3, v4, v5, v6, center):
+        face = Hexagon(v1, v2, v3, v4, v5, v6, center)
+        self.hexes.add(face)
 
     def triangles(self):
         v_count = 0
         i_count = 0
-        verts = np.zeros(shape=(self.n_verts, 3), dtype=np.float32)
-        index = np.zeros(shape=(self.n_triangles, 3), dtype=np.uint32)
-        lines = np.zeros(shape=(self.n_verts, 2), dtype=np.uint32)
+        total_vertex_count = len(self.faces)*3 + len(self.hexes)*7
+        verts = np.zeros(shape=(total_vertex_count, 3), dtype=np.float32)
+        index = np.zeros(shape=(len(self.faces)+len(self.hexes)*6, 3), dtype=np.uint32)
+        lines = np.zeros(shape=(len(self.faces)*3+len(self.hexes)*7, 2), dtype=np.uint32)
         for face in self.faces:
-            if len(face) == 3:
-                v1, v2, v3 = face.verts
-                i1, i2, i3 = v_count, v_count+1, v_count+2
-                verts[i1, :] = tuple(v1)
-                verts[i2, :] = tuple(v2)
-                verts[i3, :] = tuple(v3)
-                index[i_count] = (i1, i2, i3)
+            v1, v2, v3 = face.verts
+            i1, i2, i3 = v_count, v_count+1, v_count+2
+            verts[i1, :] = tuple(v1)
+            verts[i2, :] = tuple(v2)
+            verts[i3, :] = tuple(v3)
+            index[i_count] = (i1, i2, i3)
+            if face.top:
                 lines[i1] = (i1, i2)
                 lines[i2] = (i2, i3)
                 lines[i3] = (i3, i1)
-                v_count += 3
-                i_count += 1
-            else:
-                raise ValueError("Weird face! {} sides!".format(len(face)))
+            v_count += 3
+            i_count += 1
+        for hexa in self.hexes:
+            v1, v2, v3, v4, v5, v6, center = hexa.verts
+            verts[v_count+0] = tuple(v1)
+            verts[v_count+1] = tuple(v2)
+            verts[v_count+2] = tuple(v3)
+            verts[v_count+3] = tuple(v4)
+            verts[v_count+4] = tuple(v5)
+            verts[v_count+5] = tuple(v6)
+            verts[v_count+6] = tuple(center)
+
+            index[i_count+0] = (v_count+6, v_count+0, v_count+1)
+            index[i_count+1] = (v_count+6, v_count+1, v_count+2)
+            index[i_count+2] = (v_count+6, v_count+2, v_count+3)
+            index[i_count+3] = (v_count+6, v_count+3, v_count+4)
+            index[i_count+4] = (v_count+6, v_count+4, v_count+5)
+            index[i_count+5] = (v_count+6, v_count+5, v_count+0)
+
+            lines[v_count+0] = (v_count+0, v_count+1)
+            lines[v_count+1] = (v_count+1, v_count+2)
+            lines[v_count+2] = (v_count+2, v_count+3)
+            lines[v_count+3] = (v_count+3, v_count+4)
+            lines[v_count+4] = (v_count+4, v_count+5)
+            lines[v_count+5] = (v_count+5, v_count+0)
+            v_count += 7
+            i_count += 6
         return verts, index, lines
+
+    def color(self):
+        count = 0
+        color = np.zeros(shape=(len(self.faces)*3+len(self.hexes)*7, 3), dtype=np.float32)
+        for face in self.faces:
+            v1, v2, v3 = face.verts
+            i1, i2, i3 = count, count+1, count+2
+            value = np.random.random(size=(3))
+            #print(value)
+            color[i1, :] = value
+            color[i2, :] = value
+            color[i3, :] = value
+            count += 3
+        for hexa in self.hexes:
+            value = np.random.random(size=(3)) # each vertex is the same color for hex
+            for i, v in enumerate(hexa.verts):
+                color[count+i, :] = value
+            count += 7
+            
+        return color
+
+
+class HexPlanet():
+    def __init__(self, refine=0, force_refine=False):
+        self.hexes = set()
+        self.pents = set()
+        self.adjacents = {}
+        self.neighbors = set()
+
+        t = ((1.0 + np.sqrt(5.0))) / 2.0
+        verts = [
+            (-1, t, 0), (1, t, 0), (-1, -t, 0), (1, -t, 0),
+            (0, -1, t), (0, 1, t), (0, -1, -t), (0, 1, -t),
+            (t, 0, -1), (t, 0, 1), (-t, 0, -1), (-t, 0, 1),
+        ]
+        faces = [
+            (0, 11, 5), (0, 5, 1), (0, 1, 7), (0, 7, 10), (0, 10, 11), # top
+            (1, 5, 9), (5, 11, 4), (11, 10, 2), (10, 7, 6), (7, 1, 8), # side
+            (3, 9, 4), (3, 4, 2), (3, 2, 6), (3, 6, 8), (3, 8, 9), # bottom
+            (4, 9, 5), (2, 4, 11), (6, 2, 10), (8, 6, 7), (9, 8, 1), # side
+        ]
+        pents = [
+            (0, 11, 5, 1, 7, 10), # top
+            (3, 4, 2, 6, 8, 9), # bottom
+            (11, 0, 5, 4, 2, 10),
+            (5, 0, 1, 9, 4, 11),
+            (1, 0, 7, 8, 9, 5),
+            (7, 0, 1, 8, 6, 10),
+            (10, 0, 11, 2, 6, 7),
+            (4, 3, 2, 11, 5, 9),
+            (2, 3, 6, 10, 11, 4),
+            (6, 3, 8, 7, 10, 2),
+            (8, 3, 9, 1, 7, 6),
+            (9, 3, 4, 5, 1, 8),
+        ]
+        tags = [
+            'draw_lines',
+        ]
+        moved = {}
+        for ic, i1, i2, i3, i4, i5 in pents:
+            v1 = Vert(*verts[i1]).normalize()
+            v2 = Vert(*verts[i2]).normalize()
+            v3 = Vert(*verts[i3]).normalize()
+            v4 = Vert(*verts[i4]).normalize()
+            v5 = Vert(*verts[i5]).normalize()
+            cn = Vert(*verts[ic]).normalize()
+            m1 = median(cn, v1, weight=2)
+            m2 = median(cn, v2, weight=2)
+            m3 = median(cn, v3, weight=2)
+            m4 = median(cn, v4, weight=2)
+            m5 = median(cn, v5, weight=2)
+            mc = (m1+m2+m3+m4+m5)/5
+            moved[cn] = mc
+            self.adjacents[mc] = {m1, m2, m3, m4, m5}
+            #self.add_pen(v1, v2, v3, v4, v5, cn, tags)
+            self.add_pen(m1, m2, m3, m4, m5, mc, tags)
+        for i1, i2, i3 in faces:
+            v1 = Vert(*verts[i1]).normalize()
+            v2 = Vert(*verts[i2]).normalize()
+            v3 = Vert(*verts[i3]).normalize()
+            m1a = median(v1, v2, weight=2)
+            m2a = median(v2, v3, weight=2)
+            m3a = median(v3, v1, weight=2)
+            m1b = median(v2, v1, weight=2)
+            m2b = median(v3, v2, weight=2)
+            m3b = median(v1, v3, weight=2)
+            mc = (m1a+m2a+m3a+m1b+m2b+m3b)/6
+            self.neighbors.add(Edge(mc, moved[v1]))
+            self.neighbors.add(Edge(mc, moved[v2]))
+            self.neighbors.add(Edge(mc, moved[v3]))
+            #self.adjacents[mc] = {moved[v1], moved[v2], moved[v3]}
+            self.add_hex(m1a, m1b, m2a, m2b, m3a, m3b, mc, tags)
+
+
+    def add_hex(self, v1, v2, v3, v4, v5, v6, center, tags=None):
+        self.hexes.add(Hexagon(v1, v2, v3, v4, v5, v6, center, tags=tags))
+
+    def add_pen(self, v1, v2, v3, v4, v5, center, tags=None):
+        self.pents.add(Pentagon(v1, v2, v3, v4, v5, center, tags=tags))
+
+    def get_hexes(self):
+        return self.hexes
+
+    def get_pents(self):
+        return self.pents
+
+    def get_neighbors(self, v):
+        ns = []
+        for e in self.neighbors:
+            if e.includes(v):
+                ns.append(e.connects(v))
+        return ns
+
+    def refine(self):
+        old_hexes = deepcopy(self.hexes)
+        self.hexes = set()
+        for h in old_hexes:
+            v1, v2, v3, v4, v5, v6, cn = h.verts 
+            m1 = median(v1, v2)
+            m2 = median(v2, v3)
+            m3 = median(v3, v4)
+            m4 = median(v4, v5)
+            m5 = median(v5, v6)
+            m6 = median(v6, v1)
+            mc = (m1+m2+m3+m4+m5+m6)/6
+            self.add_hex(*h.verts)
+            self.add_hex(m1, m2, m3, m4, m5, m6, mc)
+
+    def render(self):
+        v_count = 0
+        i_count = 0
+        verts = np.zeros((len(self.hexes)*7 + len(self.pents)*6, 3), dtype=np.float32)
+        index = np.zeros((len(self.hexes)*6 + len(self.pents)*5, 3), dtype=np.uint32)
+        lines = np.zeros((len(self.hexes)*7 + len(self.pents)*6, 2), dtype=np.uint32)
+        color = np.zeros((len(self.hexes)*7 + len(self.pents)*6, 3), dtype=np.float32)
+        for h in self.get_hexes():
+            c = np.random.random(3)
+            v1, v2, v3, v4, v5, v6, cen = h.verts
+            verts[v_count+0] = tuple(v1)
+            verts[v_count+1] = tuple(v2)
+            verts[v_count+2] = tuple(v3)
+            verts[v_count+3] = tuple(v4)
+            verts[v_count+4] = tuple(v5)
+            verts[v_count+5] = tuple(v6)
+            verts[v_count+6] = tuple(cen)
+            color[v_count:v_count+7] = c
+
+            index[i_count+0] = (v_count+6, v_count+0, v_count+1)
+            index[i_count+1] = (v_count+6, v_count+1, v_count+2)
+            index[i_count+2] = (v_count+6, v_count+2, v_count+3)
+            index[i_count+3] = (v_count+6, v_count+3, v_count+4)
+            index[i_count+4] = (v_count+6, v_count+4, v_count+5)
+            index[i_count+5] = (v_count+6, v_count+5, v_count+0)
+
+            lines[v_count+0] = (v_count+0, v_count+1)
+            lines[v_count+1] = (v_count+1, v_count+2)
+            lines[v_count+2] = (v_count+2, v_count+3)
+            lines[v_count+3] = (v_count+3, v_count+4)
+            lines[v_count+4] = (v_count+4, v_count+5)
+            lines[v_count+5] = (v_count+5, v_count+0)
+            v_count += 7
+            i_count += 6
+        for p in self.get_pents():
+            c = np.random.random(3)
+            v1, v2, v3, v4, v5, cen = p.verts
+            verts[v_count+0] = tuple(v1)
+            verts[v_count+1] = tuple(v2)
+            verts[v_count+2] = tuple(v3)
+            verts[v_count+3] = tuple(v4)
+            verts[v_count+4] = tuple(v5)
+            verts[v_count+5] = tuple(cen)
+            color[v_count:v_count+6] = c
+
+            index[i_count+0] = (v_count+5, v_count+0, v_count+1)
+            index[i_count+1] = (v_count+5, v_count+1, v_count+2)
+            index[i_count+2] = (v_count+5, v_count+2, v_count+3)
+            index[i_count+3] = (v_count+5, v_count+3, v_count+4)
+            index[i_count+4] = (v_count+5, v_count+4, v_count+0)
+
+            lines[v_count+0] = (v_count+0, v_count+1)
+            lines[v_count+1] = (v_count+1, v_count+2)
+            lines[v_count+2] = (v_count+2, v_count+3)
+            lines[v_count+3] = (v_count+3, v_count+4)
+            lines[v_count+4] = (v_count+4, v_count+0)
+            v_count += 6
+            i_count += 5
+        return verts, index, lines, color
+
+
+class TriPlanet():
+    def __init__(self, refine=0, force_refine=False):
+        self.faces = set()
+        self.adjacents = dict()
+
+        t = ((1.0 + np.sqrt(5.0))) / 2.0
+        verts = [
+            (-1, t, 0), (1, t, 0), (-1, -t, 0), (1, -t, 0),
+            (0, -1, t), (0, 1, t), (0, -1, -t), (0, 1, -t),
+            (t, 0, -1), (t, 0, 1), (-t, 0, -1), (-t, 0, 1),
+        ]
+        faces = [
+            (0, 11, 5), (0, 5, 1), (0, 1, 7), (0, 7, 10), (0, 10, 11), # top
+            (1, 5, 9), (5, 11, 4), (11, 10, 2), (10, 7, 6), (7, 1, 8), # side a
+            (3, 9, 4), (3, 4, 2), (3, 2, 6), (3, 6, 8), (3, 8, 9), # bottom
+            (4, 9, 5), (2, 4, 11), (6, 2, 10), (8, 6, 7), (9, 8, 1), # side b
+        ]
+        tags = [
+            'refine', 'extrude', 'draw_faces', 'draw_lines', 'color'
+        ]
+        for i1, i2, i3 in faces:
+            x1, y1, z1 = verts[i1]
+            x2, y2, z2 = verts[i2]
+            x3, y3, z3 = verts[i3]
+            v1, v2, v3 = Vert(x1, y1, z1), Vert(x2, y2, z2), Vert(x3, y3, z3)
+            v1, v2, v3 = v1.normalize(), v2.normalize(), v3.normalize()
+            self.add(v1, v2, v3, tags)
+
+        if refine > 3 and not force_refine:
+            raise Warning
+        for r in range(refine):
+            self.refine()
+
+    def add(self, v1, v2, v3, tags=None):
+        self.faces.add(Triangle(v1, v2, v3, tags=tags))
+        for v in [v1, v2, v3]:
+            if v not in self.adjacents:
+                self.adjacents[v] = set()
+        self.adjacents[v1] = self.adjacents[v1].union(set([v2, v3]))
+        self.adjacents[v2] = self.adjacents[v2].union(set([v3, v1]))
+        self.adjacents[v3] = self.adjacents[v3].union(set([v1, v2]))
+
+    def get_faces(self, tags=None):
+        return self.faces
+
+    def refine(self, norm=True):
+        old_faces = deepcopy(self.faces)
+        self.faces = set()
+        for face in old_faces:
+            v1, v2, v3 = face.verts
+            tags = ['refine', 'extrude', 'draw_lines', 'draw_faces', 'color']
+            m1 = median(v1, v2)
+            m2 = median(v2, v3)
+            m3 = median(v3, v1)
+            if norm:
+                m1 = m1.normalize()
+                m2 = m2.normalize()
+                m3 = m3.normalize()
+            self.add(v1, *near(v1, m1, m2, m3), tags=tags)
+            self.add(v2, *near(v2, m1, m2, m3), tags=tags)
+            self.add(v3, *near(v3, m1, m2, m3), tags=tags)
+            self.add(m1, m2, m3, tags)
+
+    def render(self):
+        v_count = 0
+        i_count = 0
+        verts = np.zeros(shape=(len(self.faces)*3, 3), dtype=np.float32)
+        index = np.zeros(shape=(len(self.faces), 3), dtype=np.uint32)
+        lines = np.zeros(shape=(len(self.faces)*3, 2), dtype=np.uint32)
+        color = np.zeros(shape=(len(self.faces)*3, 3), dtype=np.float32)
+        for tri in self.faces:
+            v1, v2, v3 = tri.verts
+            i1, i2, i3 = v_count, v_count+1, v_count+2
+            verts[i1, :] = tuple(v1)
+            verts[i2, :] = tuple(v2)
+            verts[i3, :] = tuple(v3)
+            color[i1:i3+1, :] = np.random.random(size=(3))
+            index[i_count] = (i1, i2, i3)
+            if 'draw_lines' in tri.tags:
+                lines[i1] = (i1, i2)
+                lines[i2] = (i2, i3)
+                lines[i3] = (i3, i1)
+            v_count += 3
+            i_count += 1
+        return verts, index, lines, color
+
+
+def extrude(old, chance, delta):
+    new = Geometry()
+    for face in old.tops:
+        v1, v2, v3 = face.verts
+        r = random.random()
+        if r < chance:
+            #delta = 1.05
+            (d1, d2, d3) = v1*delta, v2*delta, v3*delta
+            #d1, d2, d3 = normalize(v1, delta), normalize(v2, delta), normalize(v3, delta)
+            #new.add(v1, v2, v3)
+            new.add(d1, d2, d3)
+
+            new.add(v1, d1, v2, top=False)
+            new.add(d2, d1, v2, top=False)
+            new.add(v2, d2, v3, top=False)
+            new.add(d3, d2, v3, top=False)
+            new.add(v3, d3, v1, top=False)
+            new.add(d1, d3, v1, top=False)
+        else:
+            new.add(v1, v2, v3)
+    for face in old.sides:
+        new.add(*face, top=False)
+    return new
 
 
 def icosphere():
@@ -151,87 +483,16 @@ def icosphere():
         (2, 4, 11), (6, 2, 10),
         (8, 6, 7), (9, 8, 1),
     ]
-    ico = Geometry()
+    ico = TriPlanet()
+    tags = ['refine', 'extrude', 'draw_faces', 'draw_lines', 'color']
     for i1, i2, i3 in faces:
         x1, y1, z1 = verts[i1]
         x2, y2, z2 = verts[i2]
         x3, y3, z3 = verts[i3]
         v1, v2, v3 = Vert(x1, y1, z1), Vert(x2, y2, z2), Vert(x3, y3, z3)
         v1, v2, v3 = normalize(v1), normalize(v2), normalize(v3)
-        ico.add(v1, v2, v3)
+        ico.add(v1, v2, v3, tags)
     return ico
-
-
-def refine(old, norm=True):
-    new = Geometry()
-    for face in old.faces:
-        v1, v2, v3 = face.verts
-        m1 = median(v1, v2)
-        m2 = median(v2, v3)
-        m3 = median(v3, v1)
-        if norm:
-            m1 = normalize(m1, 1)
-            m2 = normalize(m2, 1)
-            m3 = normalize(m3, 1)
-        new.add(v1, *near(v1, m1, m2, m3))
-        new.add(v2, *near(v2, m1, m2, m3))
-        new.add(v3, *near(v3, m1, m2, m3))
-        new.add(m1, m2, m3)
-    return new
-
-
-def extrude(old):
-    new = Geometry()
-    for face in old.faces:
-        v1, v2, v3 = face.verts
-        if random.uniform(0, 1) < 0.5:
-            delta = random.choice([1.2, 1.3, 1.5])
-            d1, d2, d3 = normalize(v1, delta), normalize(v2, delta), normalize(v3, delta)
-            #new.add(v1, v2, v3)
-            new.add(d1, d2, d3)
-
-            new.add(v1, d1, v2)
-            new.add(d2, d1, v2)
-            new.add(v2, d2, v3)
-            new.add(d3, d2, v3)
-            new.add(v3, d3, v1)
-            new.add(d1, d3, v1)
-        else:
-            new.add(v1, v2, v3)
-    return new
-
-
-def truncate(old):
-    new = Geometry()
-    for face in old.faces:
-        v1, v2, v3 = face.verts
-        
-        cen = center(face.v1, face.v2, face.v3)
-        m1a = median(v1, v2, weight=2)
-        m1b = median(v2, v1, weight=2)
-        m2a = median(v2, v3, weight=2)
-        m2b = median(v3, v2, weight=2)
-        m3a = median(v3, v1, weight=2)
-        m3b = median(v1, v3, weight=2)
-
-        new.add(cen, m1a, m1b, m2a, m2b, m3a, m3b)
-
-        new.add_face(e1.v1, *near(e1.v1, m1a, m1b, m2a, m2b, m3a, m3b))
-        new.add_face(e2.v1, *near(e2.v1, m1a, m1b, m2a, m2b, m3a, m3b))
-        new.add_face(e3.v1, *near(e3.v1, m1a, m1b, m2a, m2b, m3a, m3b))
-        new.add_face(cen, m1a, m1b)
-        new.add_face(cen, m2a, m2b)
-        new.add_face(cen, m3a, m3b)
-
-        #new.add_face(cen, m1a, m2b)
-        #new.add_face(cen, m2a, m3b)
-        #new.add_face(cen, m3a, m1b)
-    return new
-
-
-def normalize(v, height=1):
-    l = math.sqrt(sum(v*v))
-    return (v*height)/l
 
 def near(v, *args):
     d = {m:sum(distance(v, m)) for m in args}
