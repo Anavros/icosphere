@@ -1,7 +1,7 @@
 
 # Constants
-WIDTH = 480
-HEIGHT = 480
+WIDTH = 960
+HEIGHT = 960
 SIZE = (WIDTH, HEIGHT)
 TITLE = "???"
 CLEAR_COLOR = (1.0, 1.0, 1.0, 1.0)

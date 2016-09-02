@@ -5,6 +5,7 @@ import geometry
 import numpy
 from vispy.util import transforms
 from vispy import gloo
+import polyhedra
 
 
 class GameState:
@@ -22,10 +23,15 @@ game = GameState()
 #game.view = tools.scale(game.view, 0.5)
 game.view = numpy.dot(game.view, transforms.translate((0, 0, -6)))
 
-#planet = geometry.TriPlanet()
-planet = geometry.HexPlanet()
+#planet = geometry.TriPlanet(refine=0, force_refine=False)
+#planet = geometry.trim(planet)
+#planet = geometry.HexPlanet()
 #planet.refine()
-verts, index, lines, color = planet.render()
+
+tile = polyhedra.FlatTile()
+verts, index, lines, color = tile.construct_buffers()
+
+#verts, index, lines, color = planet.render()
 game.thing = GameObject(verts, gen.identity())
 game.thing.index = gloo.IndexBuffer(index)
 

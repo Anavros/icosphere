@@ -3,6 +3,18 @@ import numpy as np
 import math
 from copy import deepcopy
 import random
+import itertools
+
+#from polyhedra import Vert, Edge, Face, Triangle, Pentagon, Hexagon
+# traverse once for every vertex
+# get all edges
+# make a vertex 1/3 of the way down
+# and make a new face using all of the new vertices
+# traverse once for every face (triangle)
+# get edges
+# make 6 points, 2 for each edge
+# use those points to make a hexagon
+# but then how to maintain order?
 
 class Vert:
     def __init__(self, x, y, z):
@@ -29,6 +41,11 @@ class Vert:
     def __sum__(self):
         return self.x+self.y+self.z
     def __eq__(self, vert):
+        #ep = 0.001
+        #dx = abs(self.x-vert.x)
+        #dy = abs(self.y-vert.y)
+        #dz = abs(self.z-vert.z)
+        #return dx < ep and dy < ep and dz < ep
         return self.x==vert.x and self.y==vert.y and self.z==vert.z
     def __hash__(self):
         return hash((self.x, self.y, self.z))
@@ -66,6 +83,8 @@ class Face:
         return sum([hash(v) for v in self.verts])
     def __len__(self):
         return len(self.verts)
+    def shared(self, other_face):
+        return set(self.verts) & set(other_face.verts)
 
 
 class Triangle(Face):
@@ -76,114 +95,6 @@ class Pentagon(Face):
 
 class Hexagon(Face):
     pass
-
-
-def distance(v1, v2):
-    return abs(v1-v2)
-
-
-def median(v1, v2, weight=1):
-    return ((v1*weight)+v2)/(weight+1)
-
-
-def center(v1, v2, v3):
-    return (v1+v2+v3)/3
-
-
-class Geometry:
-    def __init__(self):
-        #self.verts = set()
-        #self.edges = set()
-        self.faces = set()
-
-        self.tops = set()
-        self.sides = set()
-
-        self.hexes = set()
-
-        self.counts = {}
-        self.n_triangles = 0
-        self.n_verts = 0
-
-    def add(self, v1, v2, v3, top=True):
-        face = Face(v1, v2, v3, top=top)
-        self.faces.add(face)
-        if top:
-            self.tops.add(face)
-        else:
-            self.sides.add(face)
-
-    def add_hex(self, v1, v2, v3, v4, v5, v6, center):
-        face = Hexagon(v1, v2, v3, v4, v5, v6, center)
-        self.hexes.add(face)
-
-    def triangles(self):
-        v_count = 0
-        i_count = 0
-        total_vertex_count = len(self.faces)*3 + len(self.hexes)*7
-        verts = np.zeros(shape=(total_vertex_count, 3), dtype=np.float32)
-        index = np.zeros(shape=(len(self.faces)+len(self.hexes)*6, 3), dtype=np.uint32)
-        lines = np.zeros(shape=(len(self.faces)*3+len(self.hexes)*7, 2), dtype=np.uint32)
-        for face in self.faces:
-            v1, v2, v3 = face.verts
-            i1, i2, i3 = v_count, v_count+1, v_count+2
-            verts[i1, :] = tuple(v1)
-            verts[i2, :] = tuple(v2)
-            verts[i3, :] = tuple(v3)
-            index[i_count] = (i1, i2, i3)
-            if face.top:
-                lines[i1] = (i1, i2)
-                lines[i2] = (i2, i3)
-                lines[i3] = (i3, i1)
-            v_count += 3
-            i_count += 1
-        for hexa in self.hexes:
-            v1, v2, v3, v4, v5, v6, center = hexa.verts
-            verts[v_count+0] = tuple(v1)
-            verts[v_count+1] = tuple(v2)
-            verts[v_count+2] = tuple(v3)
-            verts[v_count+3] = tuple(v4)
-            verts[v_count+4] = tuple(v5)
-            verts[v_count+5] = tuple(v6)
-            verts[v_count+6] = tuple(center)
-
-            index[i_count+0] = (v_count+6, v_count+0, v_count+1)
-            index[i_count+1] = (v_count+6, v_count+1, v_count+2)
-            index[i_count+2] = (v_count+6, v_count+2, v_count+3)
-            index[i_count+3] = (v_count+6, v_count+3, v_count+4)
-            index[i_count+4] = (v_count+6, v_count+4, v_count+5)
-            index[i_count+5] = (v_count+6, v_count+5, v_count+0)
-
-            lines[v_count+0] = (v_count+0, v_count+1)
-            lines[v_count+1] = (v_count+1, v_count+2)
-            lines[v_count+2] = (v_count+2, v_count+3)
-            lines[v_count+3] = (v_count+3, v_count+4)
-            lines[v_count+4] = (v_count+4, v_count+5)
-            lines[v_count+5] = (v_count+5, v_count+0)
-            v_count += 7
-            i_count += 6
-        return verts, index, lines
-
-    def color(self):
-        count = 0
-        color = np.zeros(shape=(len(self.faces)*3+len(self.hexes)*7, 3), dtype=np.float32)
-        for face in self.faces:
-            v1, v2, v3 = face.verts
-            i1, i2, i3 = count, count+1, count+2
-            value = np.random.random(size=(3))
-            #print(value)
-            color[i1, :] = value
-            color[i2, :] = value
-            color[i3, :] = value
-            count += 3
-        for hexa in self.hexes:
-            value = np.random.random(size=(3)) # each vertex is the same color for hex
-            for i, v in enumerate(hexa.verts):
-                color[count+i, :] = value
-            count += 7
-            
-        return color
-
 
 class HexPlanet():
     def __init__(self, refine=0, force_refine=False):
@@ -221,6 +132,9 @@ class HexPlanet():
         tags = [
             'draw_lines',
         ]
+        connections = {
+            0: [(0, 5, 11), (0, 5, 1)] # this is just repeating faces over again
+        }
         moved = {}
         for ic, i1, i2, i3, i4, i5 in pents:
             v1 = Vert(*verts[i1]).normalize()
@@ -236,7 +150,7 @@ class HexPlanet():
             m5 = median(cn, v5, weight=2)
             mc = (m1+m2+m3+m4+m5)/5
             moved[cn] = mc
-            self.adjacents[mc] = {m1, m2, m3, m4, m5}
+            #self.adjacents[mc] = {m1, m2, m3, m4, m5} these are just the pent verts
             #self.add_pen(v1, v2, v3, v4, v5, cn, tags)
             self.add_pen(m1, m2, m3, m4, m5, mc, tags)
         for i1, i2, i3 in faces:
@@ -253,6 +167,9 @@ class HexPlanet():
             self.neighbors.add(Edge(mc, moved[v1]))
             self.neighbors.add(Edge(mc, moved[v2]))
             self.neighbors.add(Edge(mc, moved[v3]))
+            # needs six connections!
+            # other hexes need to connect to this one
+            self.connect(mc, moved[v1], moved[v2], moved[v3])
             #self.adjacents[mc] = {moved[v1], moved[v2], moved[v3]}
             self.add_hex(m1a, m1b, m2a, m2b, m3a, m3b, mc, tags)
 
@@ -269,27 +186,45 @@ class HexPlanet():
     def get_pents(self):
         return self.pents
 
-    def get_neighbors(self, v):
-        ns = []
-        for e in self.neighbors:
-            if e.includes(v):
-                ns.append(e.connects(v))
-        return ns
+    def get_all_faces(self):
+        return list(self.hexes) + list(self.pents)
+
+    def connect(self, *vecs):
+        pass
 
     def refine(self):
         old_hexes = deepcopy(self.hexes)
+        old_pents = deepcopy(self.pents)
         self.hexes = set()
+        self.pents = set()
+        moved = {}
         for h in old_hexes:
+            ns = find_neighbors(old_hexes|old_pents, h)
+            n1, n2, n3, n4, n5, n6 = arrange(ns)
             v1, v2, v3, v4, v5, v6, cn = h.verts 
-            m1 = median(v1, v2)
-            m2 = median(v2, v3)
-            m3 = median(v3, v4)
-            m4 = median(v4, v5)
-            m5 = median(v5, v6)
-            m6 = median(v6, v1)
-            mc = (m1+m2+m3+m4+m5+m6)/6
-            self.add_hex(*h.verts)
-            self.add_hex(m1, m2, m3, m4, m5, m6, mc)
+            for w1, w2 in [(n1, n2), (n2, n3), (n3, n4), (n4, n5), (n5, n6), (n6, n1)]:
+                m1a = median(cn, w1, weight=2)
+                m2a = median(w1, w2, weight=2)
+                m3a = median(w2, cn, weight=2)
+                m1b = median(w1, cn, weight=2)
+                m2b = median(w2, w1, weight=2)
+                m3b = median(cn, w2, weight=2)
+                mc = (m1a+m1b+m2a+m2b+m3a+m3b)/6
+                # cache connection?
+                self.add_hex(m1a, m1b, m2a, m2b, m3a, m3b, mc)
+        for p in []:
+            ns = find_neighbors(old_hexes|old_pents, p)
+            n1, n2, n3, n4, n5 = arrange(ns)
+            v1, v2, v3, v4, v5, cn = p.verts 
+            for w1, w2 in [(n1, n2), (n2, n3), (n3, n4), (n4, n5), (n5, n1)]:
+                m1a = median(cn, w1, weight=2)
+                m2a = median(w1, w2, weight=2)
+                m3a = median(w2, cn, weight=2)
+                m1b = median(w1, cn, weight=2)
+                m2b = median(w2, w1, weight=2)
+                m3b = median(cn, w2, weight=2)
+                mc = (m1a+m1b+m2a+m2b+m3a+m3b)/6
+                self.add_pen(m1a, m1b, m2a, m2b, m3a, m3b, mc)
 
     def render(self):
         v_count = 0
@@ -352,6 +287,64 @@ class HexPlanet():
         return verts, index, lines, color
 
 
+def find_neighbors(face_set, face):
+    return [f.verts[-1] for f in face_set if len(face.shared(f))==2]
+
+
+def vert_to_faces(v, faces):
+    return [f for f in faces if v in f.verts]
+            
+
+
+def trim(triplanet):
+    # get every vert, find all edges, make new thing
+    # do same for every face
+    # use brute force ordering function
+    new = HexPlanet()
+    new.hexes = set()
+    new.pents = set()
+    done = set()
+    for face in triplanet.faces:
+        v1, v2, v3 = face.verts
+        m12 = median(v1, v2, 2)
+        m21 = median(v2, v1, 2)
+        m23 = median(v2, v3, 2)
+        m32 = median(v3, v2, 2)
+        m31 = median(v3, v1, 2)
+        m13 = median(v1, v3, 2)
+        cn = (m12+m21+m23+m32+m31+m13)/6
+        new.add_hex(m12, m21, m23, m32, m31, m13, cn)
+        for v in face.verts:
+            if v in done: continue
+            adj_fs = vert_to_faces(v, triplanet.faces)
+            adj_vs = set()
+            for f in adj_fs:
+                for p in f.verts:
+                    adj_vs.add(p) if p not in adj_vs and p!=v else None
+            assert len(adj_vs) == 5 or len(adj_vs) == 6, str(len(adj_vs))
+            if len(adj_vs) == 5:
+                v1, v2, v3, v4, v5 = arrange(adj_vs)
+                m1 = median(v, v1, 2)
+                m2 = median(v, v2, 2)
+                m3 = median(v, v3, 2)
+                m4 = median(v, v4, 2)
+                m5 = median(v, v5, 2)
+                cn = (m1+m2+m3+m4+m5)/5
+                new.add_pen(m1, m2, m3, m4, m5, cn)
+            elif len(adj_vs) == 6:
+                v1, v2, v3, v4, v5, v6 = arrange(adj_vs)
+                m1 = median(v, v1, 2)
+                m2 = median(v, v2, 2)
+                m3 = median(v, v3, 2)
+                m4 = median(v, v4, 2)
+                m5 = median(v, v5, 2)
+                m6 = median(v, v6, 2)
+                cn = (m1+m2+m3+m4+m5+m6)/6
+                new.add_hex(m1, m2, m3, m4, m5, m6, cn)
+            done.add(v)
+    return new
+
+
 class TriPlanet():
     def __init__(self, refine=0, force_refine=False):
         self.faces = set()
@@ -383,7 +376,7 @@ class TriPlanet():
         if refine > 3 and not force_refine:
             raise Warning
         for r in range(refine):
-            self.refine()
+            self.refine(norm=True)
 
     def add(self, v1, v2, v3, tags=None):
         self.faces.add(Triangle(v1, v2, v3, tags=tags))
@@ -439,28 +432,25 @@ class TriPlanet():
         return verts, index, lines, color
 
 
-def extrude(old, chance, delta):
-    new = Geometry()
-    for face in old.tops:
-        v1, v2, v3 = face.verts
+def extrude_hex(old, chance, da):
+    new = HexPlanet()
+    for h in old.hexes:
+        v1, v2, v3, v4, v5, v6, vc = h.verts
         r = random.random()
         if r < chance:
-            #delta = 1.05
-            (d1, d2, d3) = v1*delta, v2*delta, v3*delta
-            #d1, d2, d3 = normalize(v1, delta), normalize(v2, delta), normalize(v3, delta)
-            #new.add(v1, v2, v3)
-            new.add(d1, d2, d3)
+            d1, d2, d3, d4, d5, d6, dc = v1*da, v2*da, v3*da, v4*da, v5*da, v6*da, vc*da
+            new.add_hex(d1, d2, d3, d4, d5, d6, dc)
 
-            new.add(v1, d1, v2, top=False)
-            new.add(d2, d1, v2, top=False)
-            new.add(v2, d2, v3, top=False)
-            new.add(d3, d2, v3, top=False)
-            new.add(v3, d3, v1, top=False)
-            new.add(d1, d3, v1, top=False)
+            new.add(v1, d1, v2)
+            new.add(d2, d1, v2)
+            new.add(v2, d2, v3)
+            new.add(d3, d2, v3)
+            new.add(v3, d3, v1)
+            new.add(d1, d3, v1)
         else:
-            new.add(v1, v2, v3)
-    for face in old.sides:
-        new.add(*face, top=False)
+            new.add_hex(v1, v2, v3, v4, v5, v6, vc)
+    #for face in old.sides:
+        #new.add(*face, top=False)
     return new
 
 
@@ -494,7 +484,41 @@ def icosphere():
         ico.add(v1, v2, v3, tags)
     return ico
 
+
 def near(v, *args):
     d = {m:sum(distance(v, m)) for m in args}
     l = sorted(d.items(), key=lambda x: x[1])
     return l[0][0], l[1][0]
+
+
+def nearest(v1, verts, n=1):
+    distances = {v2:sum(distance(v1, v2)) for v2 in verts}
+    ordered_dis = sorted(distances.items(), key=lambda x: x[1])
+    ordered_ver = [v2 for v2, d in ordered_dis]
+    return ordered_ver[0:n+1]
+
+
+def arrange(verts):
+    if len(verts) <= 1:
+        return [verts[0]]
+    verts = list(verts)
+    head, tail = verts[0], verts[1:]
+    order = [head]
+    while len(tail) > 1:
+        head = nearest(head, tail)[0]
+        order.append(head)
+        tail.remove(head)
+    order.append(tail[0])
+    return order
+
+
+def distance(v1, v2):
+    return abs(v1-v2)
+
+
+def median(v1, v2, weight=1):
+    return ((v1*weight)+v2)/(weight+1)
+
+
+def center(v1, v2, v3):
+    return (v1+v2+v3)/3
