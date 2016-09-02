@@ -14,27 +14,27 @@ class GameState:
         self.proj = transforms.perspective(45.0, 1.0, 1.0, 20.0)
 
 class GameObject:
-    def __init__(self, model, trans):
-        self.model = model
-        self.trans = trans
+    def __init__(self, obj):
+        self.obj = obj
+        self.mat = gen.identity()
+        self.verts, self.index, self.lines, self.color = self.obj.construct_buffers()
         self.velocity = (0, 0)
+        self.overlay_verts = None
+        self.overlay_index = None
+        self.overlay_color = None
+
+    def step(self):
+        vs, ix, co = self.obj.illustrate_traversal()
+        self.overlay_verts = vs
+        self.overlay_index = ix
+        self.overlay_color = co
 
 game = GameState()
-#game.view = tools.scale(game.view, 0.5)
 game.view = numpy.dot(game.view, transforms.translate((0, 0, -6)))
 
-#planet = geometry.TriPlanet(refine=0, force_refine=False)
-#planet = geometry.trim(planet)
-#planet = geometry.HexPlanet()
-#planet.refine()
-
-tile = polyhedra.FlatTile()
-verts, index, lines, color = tile.construct_buffers()
-
-#verts, index, lines, color = planet.render()
-game.thing = GameObject(verts, gen.identity())
-game.thing.index = gloo.IndexBuffer(index)
-
+#game.thing = GameObject(polyhedra.FlatTile())
+game.thing = GameObject(polyhedra.Icosahedron())
+game.thing.step()
 
 
 def damp(n):
@@ -44,32 +44,33 @@ def damp(n):
 def update(event):
     """Update the game. Called for every frame, usually sixty per second."""
     vx, vy = game.thing.velocity
-    game.thing.trans = numpy.dot(game.thing.trans,
-        transforms.rotate(vx, (0, 1, 0)))
-    game.thing.trans = numpy.dot(game.thing.trans,
-        transforms.rotate(vy, (1, 0, 0)))
+    game.thing.mat = numpy.dot(game.thing.mat, transforms.rotate(vx, (0, 1, 0)))
+    game.thing.mat = numpy.dot(game.thing.mat, transforms.rotate(vy, (1, 0, 0)))
     game.thing.velocity = damp(vx), damp(vy)
 
 
 def draw(program):
-    program['a_position'] = game.thing.model
-    program['a_coloring'] = color
-    program['m_model'] = game.thing.trans
+    program['a_position'] = game.thing.verts
+    program['a_coloring'] = game.thing.color
+    program['m_model'] = game.thing.mat
     program['m_view'] = game.view
     program['m_proj'] = game.proj
     program['u_color'] = (0.5, 0.6, 0.7)
-    program.draw('triangles', gloo.IndexBuffer(index))
+    program.draw('triangles', gloo.IndexBuffer(game.thing.index))
     program['u_color'] = (0.2, 0.3, 0.4)
-    program.draw('lines', gloo.IndexBuffer(lines))
-    program['u_color'] = (0.0, 0.0, 0.1)
-    program.draw('points')
+    program.draw('lines', gloo.IndexBuffer(game.thing.lines))
+    #program['u_color'] = (0.0, 0.0, 0.1)
+    #program.draw('points')
+
+    program['u_color'] = (1.0, 1.0, 1.0)
+    program['a_position'] = game.thing.overlay_verts
+    program['a_coloring'] = game.thing.overlay_color
+    program.draw('points', gloo.IndexBuffer(game.thing.overlay_index))
 
 
 def left_click(point):
     """Perform these actions when the left mouse button is clicked."""
-    #print('left click')
-    #game.thing.trans = numpy.dot(game.thing.trans, transforms.rotate(15, (0, 1, 1)))
-    
+    game.thing.step()
 
 def right_click(coord):
     #print('right click')
@@ -92,15 +93,14 @@ def left_click_and_drag(start_point, end_point, delta):
 
 def right_click_and_drag(start_point, end_point, delta):
     #print('right click and drag')
-    game.thing.trans = numpy.dot(game.thing.trans,
-        transforms.rotate(delta[1]*50, (0, 0, 1)))
+    game.thing.mat = numpy.dot(game.thing.mat, transforms.rotate(delta[1]*50, (0, 0, 1)))
 
 
 def middle_click_and_drag(start_point, end_point, delta):
     #print('middle click and drag')
-    game.thing.trans = numpy.dot(game.thing.trans,
+    game.thing.mat = numpy.dot(game.thing.mat,
         transforms.rotate(delta[0]*50, (0, 1, 0)))
-    game.thing.trans = numpy.dot(game.thing.trans,
+    game.thing.mat = numpy.dot(game.thing.mat,
         transforms.rotate((0-delta[1])*50, (1, 0, 0)))
 
 
