@@ -55,16 +55,17 @@ def draw(program):
     program['m_model'] = game.thing.mat
     program['m_view'] = game.view
     program['m_proj'] = game.proj
-    program['u_color'] = (0.5, 0.6, 0.7)
+    #program['u_color'] = (0.5, 0.6, 0.7)
     program.draw('triangles', gloo.IndexBuffer(game.thing.index))
-    program['u_color'] = (0.2, 0.3, 0.4)
-    program.draw('lines', gloo.IndexBuffer(game.thing.lines))
+    #program['u_color'] = (0.2, 0.3, 0.4)
+    #program.draw('lines', gloo.IndexBuffer(game.thing.lines))
     #program['u_color'] = (0.0, 0.0, 0.1)
     #program.draw('points')
 
-    program['u_color'] = (1.0, 1.0, 1.0)
+    #program['u_color'] = (1.0, 1.0, 1.0)
     program['a_position'] = game.thing.overlay_verts
     program['a_coloring'] = game.thing.overlay_color
+    program.draw('lines', gloo.IndexBuffer(game.thing.overlay_index))
     program.draw('points', gloo.IndexBuffer(game.thing.overlay_index))
 
 
