@@ -44,6 +44,10 @@ class PolyNode:
     def __radd__(self, x): # for sum()
         return self.__add__(x)
 
+    def __mul__(self, x):
+        v = self._cast(x)
+        return PolyNode(self.x*v.x, self.y*v.y, self.z*v.z)
+
     def __truediv__(self, x):
         v = self._cast(x)
         return PolyNode(self.x/v.x, self.y/v.y, self.z/v.z)
@@ -68,14 +72,15 @@ class PolyFace:
         self.next_node = next_node
         self.original = original
 
-        # do the point hex for the left point if we're moving right
-        # actually check to do the center and the left
-        # for the center:
-        # place left near point in list
-        # move right, place that left point
-        # continue until the rightmost triangle is the original
-        # points are now in ordered list
-        # add new shape
+    def halve(self):
+        # new points halfway between each pair of vertices
+        # return four faces
+        # one gets one old connection, two new ones
+        # the center gets all new connections
+        pass
+
+    def thirds(self):
+        pass
 
 def tesselate_butts(old):
     new = Polyhedron()
@@ -133,8 +138,52 @@ def tesselate(poly):
         h_oppo = poly.add_node(*tuple(m_oppo))
         h_prev = poly.add_node(*tuple(m_prev))
         h_next = poly.add_node(*tuple(m_next))
-        new_face = poly.add_face(h_oppo, h_prev, h_next)
-    return poly
+        poly.add_face(face.cent_node, h_prev, h_next)
+        poly.add_face(h_prev, face.prev_node, h_oppo)
+        poly.add_face(h_oppo, face.next_node, h_next)
+        poly.add_face(h_oppo, h_prev, h_next)
+        del poly.faces[h_face]
+
+def hexify(poly):
+    n = deepcopy(poly.nodes)
+    f = deepcopy(poly.faces)
+    for h_face in f:
+        face = f[h_face]
+        del poly.faces[h_face]
+
+        m_oppo_l = (n[face.next_node] + n[face.prev_node]*2)/3
+        m_oppo_r = (n[face.next_node]*2 + n[face.prev_node])/3
+        m_prev_n = (n[face.cent_node]*2 + n[face.prev_node])/3
+        m_prev_f = (n[face.cent_node] + n[face.prev_node]*2)/3
+        m_next_n = (n[face.cent_node]*2 + n[face.next_node])/3
+        m_next_f = (n[face.cent_node] + n[face.next_node]*2)/3
+        m_center = sum([m_oppo_l, m_oppo_r, m_prev_n, m_prev_f, m_next_n, m_next_f])/6
+
+        h_oppo_l = poly.add_node(*tuple(m_oppo_l))
+        h_oppo_r = poly.add_node(*tuple(m_oppo_r))
+        h_prev_n = poly.add_node(*tuple(m_prev_n))
+        h_prev_f = poly.add_node(*tuple(m_prev_f))
+        h_next_n = poly.add_node(*tuple(m_next_n))
+        h_next_f = poly.add_node(*tuple(m_next_f))
+        h_center = poly.add_node(*tuple(m_center))
+
+        poly.add_face(h_center, h_oppo_l, h_oppo_r)
+        poly.add_face(h_center, h_oppo_r, h_next_f)
+        poly.add_face(h_center, h_next_f, h_next_n)
+        poly.add_face(h_center, h_next_n, h_prev_n)
+        poly.add_face(h_center, h_prev_n, h_prev_f)
+        poly.add_face(h_center, h_prev_f, h_oppo_l)
+
+        m_old_cent = n[face.cent_node]
+        m_old_prev = n[face.prev_node]
+        m_old_next = n[face.next_node]
+        # center triangle/part of hex
+        h_old_cent = poly.add_node(*tuple(m_old_cent))
+        h_old_prev = poly.add_node(*tuple(m_old_prev))
+        h_old_next = poly.add_node(*tuple(m_old_next))
+        poly.add_face(h_old_cent, h_next_n, h_prev_n)
+        poly.add_face(h_old_prev, h_prev_f, h_oppo_l)
+        poly.add_face(h_old_next, h_next_f, h_oppo_r)
 
 class Polyhedron:
     # real requirement:
@@ -222,17 +271,10 @@ class Icosahedron(Polyhedron):
             #(5, 4, 9), (11, 2, 4), (10, 6, 2), (7, 6, 8), (1, 9, 8),
         ]
         for i1, i2, i3 in f:
-            vc = PolyNode(*v[i1]) # TODO fix redundancy by checking for existance
-            vl = PolyNode(*v[i2])
-            vr = PolyNode(*v[i3])
-            self.nodes[vc.handle] = vc
-            self.nodes[vl.handle] = vl
-            self.nodes[vr.handle] = vr
-            new = PolyFace(vc.handle, vl.handle, vr.handle, original=(i1, i2, i3))
-            self.faces[new.handle] = new
-            if not self.point: self.point = new.handle
-            if not self.touch: self.touch = uuid.uuid4()
-        self.autoconnect()
+            hc = self.add_node(*v[i1])
+            hl = self.add_node(*v[i2])
+            hr = self.add_node(*v[i3])
+            face = self.add_face(hc, hl, hr)
 
 
 class FlatTile(Polyhedron):

@@ -23,9 +23,11 @@ class GameObject:
 game = GameState()
 game.view = numpy.dot(game.view, transforms.translate((0, 0, -6)))
 
-poly = polyhedra.FlatTile()
+#poly = polyhedra.FlatTile()
+poly = polyhedra.Icosahedron()
 polyhedra.tesselate(poly)
 polyhedra.tesselate(poly)
+polyhedra.hexify(poly)
 game.thing = GameObject(poly)
 
 
