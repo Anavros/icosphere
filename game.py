@@ -19,22 +19,14 @@ class GameObject:
         self.mat = gen.identity()
         self.verts, self.index, self.lines, self.color = self.obj.construct_buffers()
         self.velocity = (0, 0)
-        self.overlay_verts = None
-        self.overlay_index = None
-        self.overlay_color = None
-
-    def step(self):
-        vs, ix, co = self.obj.illustrate_traversal()
-        self.overlay_verts = vs
-        self.overlay_index = ix
-        self.overlay_color = co
 
 game = GameState()
 game.view = numpy.dot(game.view, transforms.translate((0, 0, -6)))
 
-#game.thing = GameObject(polyhedra.FlatTile())
-game.thing = GameObject(polyhedra.Icosahedron())
-game.thing.step()
+poly = polyhedra.FlatTile()
+polyhedra.tesselate(poly)
+polyhedra.tesselate(poly)
+game.thing = GameObject(poly)
 
 
 def damp(n):
@@ -55,23 +47,17 @@ def draw(program):
     program['m_model'] = game.thing.mat
     program['m_view'] = game.view
     program['m_proj'] = game.proj
-    #program['u_color'] = (0.5, 0.6, 0.7)
+    program['u_color'] = (0.5, 0.6, 0.7)
     program.draw('triangles', gloo.IndexBuffer(game.thing.index))
-    #program['u_color'] = (0.2, 0.3, 0.4)
-    #program.draw('lines', gloo.IndexBuffer(game.thing.lines))
-    #program['u_color'] = (0.0, 0.0, 0.1)
-    #program.draw('points')
-
-    #program['u_color'] = (1.0, 1.0, 1.0)
-    program['a_position'] = game.thing.overlay_verts
-    program['a_coloring'] = game.thing.overlay_color
-    program.draw('lines', gloo.IndexBuffer(game.thing.overlay_index))
-    program.draw('points', gloo.IndexBuffer(game.thing.overlay_index))
+    program['u_color'] = (0.2, 0.3, 0.4)
+    program.draw('lines', gloo.IndexBuffer(game.thing.lines))
+    program['u_color'] = (0.0, 0.0, 0.1)
+    program.draw('points')
 
 
 def left_click(point):
     """Perform these actions when the left mouse button is clicked."""
-    game.thing.step()
+    #game.thing.step()
 
 def right_click(coord):
     #print('right click')

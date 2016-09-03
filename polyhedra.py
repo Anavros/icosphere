@@ -3,6 +3,7 @@ import math
 import uuid
 import numpy as np
 import itertools
+from copy import deepcopy
 
 
 # new idea
@@ -43,6 +44,10 @@ class PolyNode:
     def __radd__(self, x): # for sum()
         return self.__add__(x)
 
+    def __truediv__(self, x):
+        v = self._cast(x)
+        return PolyNode(self.x/v.x, self.y/v.y, self.z/v.z)
+
     def normalize(self):
         l = math.sqrt(sum(self*self))
         self.move(self.x/l, self.y/l, self.z/l)
@@ -56,7 +61,8 @@ class PolyNode:
 
 class PolyFace:
     def __init__(self, cent_node, prev_node, next_node, original=None):
-        PolyAttr.__init__(self)
+        self.handle = uuid.uuid4()
+        self.touch = None
         self.cent_node = cent_node
         self.prev_node = prev_node
         self.next_node = next_node
@@ -71,7 +77,7 @@ class PolyFace:
         # points are now in ordered list
         # add new shape
 
-def tesselate(old):
+def tesselate_butts(old):
     new = Polyhedron()
     n = old.nodes
     f = old.faces
@@ -102,7 +108,7 @@ def tesselate(old):
             near_points.append(mln)
 
             cn.faces = [f1, f2, f3, f4, f5, f6]
-            mln.faces = 
+            mln.faces = None
 
         # solves the center hex (and pents), 7/13
         if len(near_points) == 5:
@@ -113,6 +119,22 @@ def tesselate(old):
         # so we might only need 7
     return new
 
+def tesselate(poly):
+    # try to do it in place, maintaining connections
+    n = deepcopy(poly.nodes)
+    f = deepcopy(poly.faces)
+    for h_face in f:
+        # how about instead of adding new nodes
+        # we take existing nodes and split them
+        face = f[h_face]
+        m_oppo = (n[face.next_node] + n[face.prev_node])/2
+        m_prev = (n[face.cent_node] + n[face.prev_node])/2
+        m_next = (n[face.cent_node] + n[face.next_node])/2
+        h_oppo = poly.add_node(*tuple(m_oppo))
+        h_prev = poly.add_node(*tuple(m_prev))
+        h_next = poly.add_node(*tuple(m_next))
+        new_face = poly.add_face(h_oppo, h_prev, h_next)
+    return poly
 
 class Polyhedron:
     # real requirement:
@@ -129,10 +151,12 @@ class Polyhedron:
             if node == n:
                 return h
         self.nodes[node.handle] = node
+        return node.handle
 
-    def add_face(self, nc, nl, nr):  # TODO: check for dupes
+    def add_face(self, hc, hl, hr):  # TODO: check for dupes
         face = PolyFace(hc, hl, hr)
         self.faces[face.handle] = face
+        return face.handle
 
     def shared(self, a, b):
         return self.nodes[a] == self.nodes[b]
