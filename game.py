@@ -28,6 +28,7 @@ poly = polyhedra.Icosahedron()
 polyhedra.tesselate(poly)
 polyhedra.tesselate(poly)
 polyhedra.hexify(poly)
+polyhedra.normalize(poly)
 game.thing = GameObject(poly)
 
 

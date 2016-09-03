@@ -185,6 +185,10 @@ def hexify(poly):
         poly.add_face(h_old_prev, h_prev_f, h_oppo_l)
         poly.add_face(h_old_next, h_next_f, h_oppo_r)
 
+def normalize(poly):
+    for n in poly.nodes.values():
+        n.normalize()
+
 class Polyhedron:
     # real requirement:
     # for every face, we need to have ordered edges
@@ -194,8 +198,9 @@ class Polyhedron:
         self.nodes = {}
         self.faces = {}
 
-    def add_node(self, x, y, z):
+    def add_node(self, x, y, z, normalize=False):
         node = PolyNode(x, y, z)
+        if normalize: node.normalize()
         for h, n in self.nodes.items():
             if node == n:
                 return h
