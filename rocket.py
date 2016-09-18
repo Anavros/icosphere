@@ -6,6 +6,7 @@ app.use_app('glfw')
 SCREEN_W = 500
 SCREEN_H = 500
 SCALE = 1
+CLEAR_COLOR = (1, 1, 1, 1)
 
 CANVAS = None
 CALLBACKS = {
@@ -23,8 +24,8 @@ CALLBACKS = {
     'key_hold': None,
 }
 
-def prep(size=(500, 500), title="Rocket Canvas", scale=1):
-    global CANVAS, SCREEN_W, SCREEN_H, SCALE
+def prep(size=(500, 500), title="Rocket Canvas", scale=1, clear_color=(1, 1, 1, 1)):
+    global CANVAS, SCREEN_W, SCREEN_H, SCALE, CLEAR_COLOR
     SCREEN_W = size[0]
     SCREEN_H = size[1]
     SCALE = scale
@@ -32,8 +33,10 @@ def prep(size=(500, 500), title="Rocket Canvas", scale=1):
         size=size,
         title=title,
         keys='interactive',
-        resizable=False
+        resizable=False,
+        px_scale=scale,
     )
+    CLEAR_COLOR = clear_color
 
 # i.e. @rocket.attach
 def attach(f):
@@ -51,6 +54,7 @@ def attach(f):
 
 
 def call(event_name, *args, **kwargs):
+    #print(event_name)
     if CALLBACKS[event_name] is not None:
         CALLBACKS[event_name](*args, **kwargs)
 
@@ -69,7 +73,7 @@ def world_to_screen(coords):
     return (x, y)
 
 
-def launch(fps='auto'):
+def launch(fps=None, autoclear=True, enablealpha=True):
     global CANVAS
     if not CANVAS:
         print("Warning: call rocket.prep() before launching. Setting default params.")
@@ -77,17 +81,20 @@ def launch(fps='auto'):
 
     # Initialization
     # Enables transparency and depth buffering.
-    gl.glEnable(gl.GL_BLEND)
-    gl.glEnable(gl.GL_DEPTH_TEST)
-    gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-    gloo.set_state(clear_color=(1, 1, 1, 1), depth_test=True)
+    if enablealpha:
+        gl.glEnable(gl.GL_BLEND)
+        gl.glEnable(gl.GL_DEPTH_TEST)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        gloo.set_state(clear_color=CLEAR_COLOR, depth_test=True)
+    else:
+        gloo.set_state(clear_color=CLEAR_COLOR)
 
-    timer = app.Timer()
+    timer = app.Timer(interval=('auto' if not fps else 1/fps))
     held_keys = []
 
     # Event Handling Functions
     def on_draw(event):
-        gloo.clear(color=True, depth=True)
+        if autoclear: gloo.clear(color=True, depth=True)
         call('draw')
     CANVAS.connect(on_draw)
 
@@ -117,11 +124,11 @@ def launch(fps='auto'):
 
     def on_mouse_double_click(event):
         if event.last_event.button == 1:
-            call('left_click', event.pos)
+            call('left_click', event.last_event.pos)
         elif event.last_event.button == 2:
-            call('right_click', event.pos)
+            call('right_click', event.last_event.pos)
         elif event.last_event.button == 3:
-            call('middle_click', event.pos)
+            call('middle_click', event.last_event.pos)
     CANVAS.connect(on_mouse_double_click)
 
     def on_mouse_move(event):
