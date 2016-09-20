@@ -5,22 +5,30 @@ import rocket
 import aux
 
 planet = aux.Mover()
+poly = polyhedra.Icosahedron()
 camera = aux.View(fov=45)
 camera.move(z=(-6))
 program = aux.load_shaders('vertex.glsl', 'fragment.glsl')
 
 def main():
     rocket.prep(title="???")
+    planet.vel = aux.Velocity()
+    reset()
+    update_planet()
+    rocket.launch()
+
+
+def reset():
+    #print('resetting')
+    global poly
     poly = polyhedra.Icosahedron()
-    polyhedra.tesselate(poly)
-    #polyhedra.tesselate(poly)
-    #polyhedra.hexify(poly)
-    polyhedra.normalize(poly)
+
+
+def update_planet():
+    #print('updating')
     planet.verts, planet.index, planet.lines, planet.color = poly.construct_buffers()
     planet.index = aux.buffer(planet.index)
     planet.lines = aux.buffer(planet.lines)
-    planet.vel = aux.Velocity()
-    rocket.launch()
 
 
 @rocket.attach
@@ -48,6 +56,22 @@ def draw():
 
 
 @rocket.attach
+def key_press(key):
+    if key == 'R':
+        reset()
+        update_planet()
+    if key == 'T':
+        polyhedra.tesselate(poly)
+        update_planet()
+    elif key == 'Y':
+        polyhedra.hexify(poly)
+        update_planet()
+    elif key == 'U':
+        polyhedra.normalize(poly)
+        update_planet()
+
+
+@rocket.attach
 def left_drag(start, end, delta):
     planet.vel.accel(x=delta[0]/5, y=delta[1]/5)
 
@@ -55,7 +79,7 @@ def left_drag(start, end, delta):
 @rocket.attach
 def right_drag(start, end, delta):
     planet.rotate(z=(0-delta[1])/2)
-    
+
 
 @rocket.attach
 def middle_drag(start, end, delta):
