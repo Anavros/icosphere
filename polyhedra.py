@@ -144,6 +144,8 @@ def tesselate(poly):
         poly.add_face(h_oppo, h_prev, h_next)
         del poly.faces[h_face]
 
+# IDEA: add a hash tag to each node that's part of the hex
+# would work for coloring at least
 def hexify(poly):
     n = deepcopy(poly.nodes)
     f = deepcopy(poly.faces)

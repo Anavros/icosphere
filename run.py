@@ -19,13 +19,12 @@ def main():
 
 
 def reset():
-    #print('resetting')
     global poly
     poly = polyhedra.Icosahedron()
+    polyhedra.normalize(poly)
 
 
 def update_planet():
-    #print('updating')
     planet.verts, planet.index, planet.lines, planet.color = poly.construct_buffers()
     planet.index = aux.buffer(planet.index)
     planet.lines = aux.buffer(planet.lines)
