@@ -19,7 +19,7 @@ os.mkdir(os.path.join('screenshots', pic_dir))
 print('made directory', os.path.join('screenshots', pic_dir))
 
 def main():
-    rocket.prep(title="???", size=(500, 500))
+    rocket.prep(title="???", size=(512, 512))
     planet.vel = aux.Velocity()
     reset()
     update_planet()
@@ -49,10 +49,11 @@ def screenshot():
 @rocket.attach
 def update():
     """Update the game. Called for every frame, usually sixty per second."""
+    global pic_n
     #planet.rotate(*tuple(planet.vel))
     #planet.vel.damp()
-    if go and pic_n < 8: screenshot()
-    planet.rotate(x=2.8125, y=5.625)
+    #if go and pic_n < 256: screenshot()
+    #planet.rotate(x=1.40625, y=1.40625)
 
 
 @rocket.attach
@@ -80,6 +81,8 @@ def key_press(key):
     if key == 'T':
         polyhedra.tesselate(poly)
         update_planet()
+        planet.rotate(x=22.5, y=22.5)
+        screenshot()
     elif key == 'Y':
         polyhedra.hexify(poly)
         update_planet()
@@ -92,7 +95,8 @@ def key_press(key):
     elif key == 'S':
         screenshot()
     elif key == 'N':
-        planet.rotate(x=2.8125, y=5.625)
+        planet.rotate(x=22.5, y=22.5)
+        screenshot()
     elif key == 'G':
         global go
         go = True

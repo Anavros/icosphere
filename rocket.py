@@ -50,7 +50,8 @@ def attach(f):
     if name in CALLBACKS.keys():
         CALLBACKS[name] = f
     else:
-        raise ValueError("unknown event @rocket.call: {}.".format(name))
+        raise ValueError("unknown event @rocket.attach: {}.".format(name))
+    return f
 
 
 def call(event_name, *args, **kwargs):
