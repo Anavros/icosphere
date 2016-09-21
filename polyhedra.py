@@ -153,6 +153,7 @@ def hexify(poly):
         face = f[h_face]
         del poly.faces[h_face]
 
+        # midpoints, each a third across one edge of the triangle
         m_oppo_l = (n[face.next_node] + n[face.prev_node]*2)/3
         m_oppo_r = (n[face.next_node]*2 + n[face.prev_node])/3
         m_prev_n = (n[face.cent_node]*2 + n[face.prev_node])/3
@@ -161,6 +162,7 @@ def hexify(poly):
         m_next_f = (n[face.cent_node] + n[face.next_node]*2)/3
         m_center = sum([m_oppo_l, m_oppo_r, m_prev_n, m_prev_f, m_next_n, m_next_f])/6
 
+        # new node handles
         h_oppo_l = poly.add_node(*tuple(m_oppo_l))
         h_oppo_r = poly.add_node(*tuple(m_oppo_r))
         h_prev_n = poly.add_node(*tuple(m_prev_n))
@@ -168,7 +170,18 @@ def hexify(poly):
         h_next_n = poly.add_node(*tuple(m_next_n))
         h_next_f = poly.add_node(*tuple(m_next_f))
         h_center = poly.add_node(*tuple(m_center))
+        # all part of same group
+        group_id = uuid.uuid4()
+        poly.groups[h_oppo_l] = group_id
+        poly.groups[h_oppo_r] = group_id
+        poly.groups[h_prev_n] = group_id
+        poly.groups[h_prev_f] = group_id
+        poly.groups[h_next_n] = group_id
+        poly.groups[h_next_f] = group_id
+        poly.groups[h_center] = group_id
+        poly.colors[group_id] = np.random.random(3)
 
+        # size faces of hexagon
         poly.add_face(h_center, h_oppo_l, h_oppo_r)
         poly.add_face(h_center, h_oppo_r, h_next_f)
         poly.add_face(h_center, h_next_f, h_next_n)
@@ -187,9 +200,11 @@ def hexify(poly):
         poly.add_face(h_old_prev, h_prev_f, h_oppo_l)
         poly.add_face(h_old_next, h_next_f, h_oppo_r)
 
+
 def normalize(poly):
     for n in poly.nodes.values():
         n.normalize()
+
 
 class Polyhedron:
     # real requirement:
@@ -199,6 +214,11 @@ class Polyhedron:
     def __init__(self):
         self.nodes = {}
         self.faces = {}
+        # maps group id -> [node ids]
+        self.groups = {}
+        # maps node id -> group id
+        self.reverse_groups = {}
+        self.colors = {}
 
     def add_node(self, x, y, z, normalize=False):
         node = PolyNode(x, y, z)
@@ -230,7 +250,14 @@ class Polyhedron:
             verts[count+0, :] = tuple(self.nodes[face.cent_node])
             verts[count+1, :] = tuple(self.nodes[face.next_node])
             verts[count+2, :] = tuple(self.nodes[face.prev_node])
-            color[count:count+3] = np.random.random(3)
+            if len(self.groups.keys()) > 0:
+                for i, n in enumerate([face.cent_node, face.next_node, face.prev_node]):
+                    if n in self.groups.keys():
+                        color[count+i] = self.colors[self.groups[n]]
+                    else:
+                        color[count+i] = np.random.random(3)
+            else:
+                color[count:count+3] = np.random.random(3)
             index[count+0] = count+0
             index[count+1] = count+1  # messy, fix later
             index[count+2] = count+2
