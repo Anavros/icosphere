@@ -12,11 +12,11 @@ poly = polyhedra.Icosahedron()
 camera = aux.View(fov=45)
 camera.move(z=(-6))
 program = aux.load_shaders('vertex.glsl', 'fragment.glsl')
-pic_dir = str(uuid4())
-pic_n = 0
-go = False
-os.mkdir(os.path.join('screenshots', pic_dir))
-print('made directory', os.path.join('screenshots', pic_dir))
+#pic_dir = str(uuid4())
+#pic_n = 0
+#go = False
+#os.mkdir(os.path.join('screenshots', pic_dir))
+#print('made directory', os.path.join('screenshots', pic_dir))
 
 def main():
     rocket.prep(title="???", size=(512, 512))
@@ -49,9 +49,9 @@ def screenshot():
 @rocket.attach
 def update():
     """Update the game. Called for every frame, usually sixty per second."""
-    global pic_n
-    #planet.rotate(*tuple(planet.vel))
-    #planet.vel.damp()
+    #global pic_n
+    planet.rotate(*tuple(planet.vel))
+    planet.vel.damp()
     #if go and pic_n < 256: screenshot()
     #planet.rotate(x=1.40625, y=1.40625)
 
@@ -81,8 +81,6 @@ def key_press(key):
     if key == 'T':
         polyhedra.tesselate(poly)
         update_planet()
-        planet.rotate(x=22.5, y=22.5)
-        screenshot()
     elif key == 'Y':
         polyhedra.hexify(poly)
         update_planet()
@@ -93,13 +91,13 @@ def key_press(key):
         polyhedra.extrude(poly)
         update_planet()
     elif key == 'S':
-        screenshot()
+        #screenshot()
+        pass
     elif key == 'N':
         planet.rotate(x=22.5, y=22.5)
-        screenshot()
-    elif key == 'G':
-        global go
-        go = True
+    #elif key == 'G':
+        #global go
+        #go = True
 
 
 @rocket.attach
