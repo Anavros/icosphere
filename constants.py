@@ -1,7 +1,0 @@
-
-# Constants
-WIDTH = 480
-HEIGHT = 480
-SIZE = (WIDTH, HEIGHT)
-TITLE = "???"
-CLEAR_COLOR = (1.0, 1.0, 1.0, 1.0)

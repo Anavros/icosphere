@@ -3,15 +3,23 @@
 import polyhedra
 import rocket
 import aux
+from vispy import gloo, io
+from uuid import uuid4
+import os
 
 planet = aux.Mover()
 poly = polyhedra.Icosahedron()
 camera = aux.View(fov=45)
 camera.move(z=(-6))
 program = aux.load_shaders('vertex.glsl', 'fragment.glsl')
+pic_dir = str(uuid4())
+pic_n = 0
+go = False
+os.mkdir(os.path.join('screenshots', pic_dir))
+print('made directory', os.path.join('screenshots', pic_dir))
 
 def main():
-    rocket.prep(title="???")
+    rocket.prep(title="???", size=(500, 500))
     planet.vel = aux.Velocity()
     reset()
     update_planet()
@@ -30,11 +38,21 @@ def update_planet():
     planet.lines = aux.buffer(planet.lines)
 
 
+def screenshot():
+    output = gloo.wrappers.read_pixels()
+    global pic_n
+    io.imsave(os.path.join('screenshots', pic_dir, '{}.png'.format(pic_n)), output)
+    print('screenshot saved as screenshots/{}/{}.png'.format(pic_dir, pic_n))
+    pic_n += 1
+
+
 @rocket.attach
 def update():
     """Update the game. Called for every frame, usually sixty per second."""
-    planet.rotate(*tuple(planet.vel))
-    planet.vel.damp()
+    #planet.rotate(*tuple(planet.vel))
+    #planet.vel.damp()
+    if go and pic_n < 8: screenshot()
+    planet.rotate(x=2.8125, y=5.625)
 
 
 @rocket.attach
@@ -68,6 +86,16 @@ def key_press(key):
     elif key == 'U':
         polyhedra.normalize(poly)
         update_planet()
+    elif key == 'E':
+        polyhedra.extrude(poly)
+        update_planet()
+    elif key == 'S':
+        screenshot()
+    elif key == 'N':
+        planet.rotate(x=2.8125, y=5.625)
+    elif key == 'G':
+        global go
+        go = True
 
 
 @rocket.attach
@@ -88,6 +116,6 @@ def middle_drag(start, end, delta):
 
 @rocket.attach
 def scroll(point, direction):
-    camera.move(0, 0, direction)
+    camera.move(0, 0, direction/10)
 
 main()

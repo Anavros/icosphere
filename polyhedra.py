@@ -2,6 +2,7 @@
 import math
 import uuid
 import numpy as np
+import random
 import itertools
 from copy import deepcopy
 
@@ -51,6 +52,10 @@ class PolyNode:
     def __truediv__(self, x):
         v = self._cast(x)
         return PolyNode(self.x/v.x, self.y/v.y, self.z/v.z)
+
+    def extend(self, n):
+        """Transform the node's length with respect to the center of the shape."""
+        self.move(self.x*n, self.y*n, self.z*n)
 
     def normalize(self):
         l = math.sqrt(sum(self*self))
@@ -193,12 +198,42 @@ def hexify(poly):
         m_old_prev = n[face.prev_node]
         m_old_next = n[face.next_node]
         # center triangle/part of hex
+        # part of pentagon? only get one tri at a time
         h_old_cent = poly.add_node(*tuple(m_old_cent))
         h_old_prev = poly.add_node(*tuple(m_old_prev))
         h_old_next = poly.add_node(*tuple(m_old_next))
-        poly.add_face(h_old_cent, h_next_n, h_prev_n)
-        poly.add_face(h_old_prev, h_prev_f, h_oppo_l)
-        poly.add_face(h_old_next, h_next_f, h_oppo_r)
+        # copies of new nodes
+        c_oppo_l = poly.add_node(*tuple(m_oppo_l))
+        c_oppo_r = poly.add_node(*tuple(m_oppo_r))
+        c_prev_n = poly.add_node(*tuple(m_prev_n))
+        c_prev_f = poly.add_node(*tuple(m_prev_f))
+        c_next_n = poly.add_node(*tuple(m_next_n))
+        c_next_f = poly.add_node(*tuple(m_next_f))
+        # just set all to one color?
+        extra_id = uuid.uuid4()
+        #color_flat = np.array([0.0, 0.0, 0.0])
+        poly.groups[h_old_cent] = extra_id
+        poly.groups[h_old_prev] = extra_id
+        poly.groups[h_old_next] = extra_id
+        poly.groups[c_oppo_l] = extra_id
+        poly.groups[c_oppo_r] = extra_id
+        poly.groups[c_prev_n] = extra_id
+        poly.groups[c_prev_f] = extra_id
+        poly.groups[c_next_n] = extra_id
+        poly.groups[c_next_f] = extra_id
+        poly.colors[extra_id] = np.array([0.0, 0.0, 0.0])
+        poly.add_face(h_old_cent, c_next_n, c_prev_n)
+        poly.add_face(h_old_prev, c_prev_f, c_oppo_l)
+        poly.add_face(h_old_next, c_next_f, c_oppo_r)
+
+
+def extrude(poly):
+    # each group id gets a new elevation
+    new_lengths = {i:random.choice([0.9, 1.0, 1.1]) for i in poly.groups.values()}
+    for n, i in poly.groups.items():
+        poly.nodes[n].extend(new_lengths[i])
+        #new_length = random.choice([1.0, 1.1])
+    #return poly  # mutates, no return
 
 
 def normalize(poly):
@@ -214,18 +249,16 @@ class Polyhedron:
     def __init__(self):
         self.nodes = {}
         self.faces = {}
-        # maps group id -> [node ids]
-        self.groups = {}
         # maps node id -> group id
-        self.reverse_groups = {}
+        self.groups = {}
         self.colors = {}
 
     def add_node(self, x, y, z, normalize=False):
         node = PolyNode(x, y, z)
         if normalize: node.normalize()
-        for h, n in self.nodes.items():
-            if node == n:
-                return h
+        #for h, n in self.nodes.items():  #disable duplicate check for color interp.
+            #if node == n:
+                #return h
         self.nodes[node.handle] = node
         return node.handle
 
