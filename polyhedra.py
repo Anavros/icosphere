@@ -69,6 +69,9 @@ class PolyNode:
         self.z = z
 
 
+# maybe we should just keep the actual nodes in these
+# we aren't preventing dupilcates because of the color problems
+# so there isn't much point adding the extra level of indirection.
 class PolyFace:
     def __init__(self, cent_node, prev_node, next_node, group=0, original=None):
         self.handle = uuid.uuid4()
@@ -78,6 +81,9 @@ class PolyFace:
         self.prev_node = prev_node
         self.next_node = next_node
         self.original = original
+
+    def n_shared_nodes(self, other_face, node_lookup):
+        pass
 
     def halve(self):
         # new points halfway between each pair of vertices
@@ -155,7 +161,8 @@ def hexify(poly):
         m_old_prev = n[face.prev_node]
         m_old_next = n[face.next_node]
         # center triangle/part of hex
-        extra_id = uuid.uuid4()
+        #extra_id = uuid.uuid4()
+        extra_id = 999 # for later testing
         # part of pentagon? only get one tri at a time
         h_old_cent = poly.add_node(*tuple(m_old_cent), group=extra_id)
         h_old_prev = poly.add_node(*tuple(m_old_prev), group=extra_id)
@@ -176,10 +183,19 @@ def hexify(poly):
 
 def extrude(poly):
     # each group id gets a new elevation
-    new_lengths = {i:random.choice([0.9, 1.0, 1.1]) for i in poly.groups.values()}
-    for n, i in poly.groups.items():
-        poly.nodes[n].extend(new_lengths[i])
-        #new_length = random.choice([1.0, 1.1])
+    # for sides:
+    # when you extrude a node, leave the old node behind and connect them
+    # although I don't know what to do about diagonals
+    # that might not work until we get some more ordered structure
+    lengths = {}
+    for node in poly.nodes.values():
+        try:
+            l = lengths[node.group]
+        except KeyError:
+            l = random.choice([0.9, 1.0, 1.1])
+            lengths[node.group] = l
+        finally:
+            node.extend(l)
     #return poly  # mutates, no return
 
 
@@ -196,8 +212,7 @@ class Polyhedron:
     def __init__(self):
         self.nodes = {}
         self.faces = {}
-        # maps node id -> group id
-        #self.groups = {}
+        self.sides = {}
         self.colors = {}
 
     def add_node(self, x, y, z, group=0, normalize=False):
@@ -214,7 +229,11 @@ class Polyhedron:
         self.faces[face.handle] = face
         return face.handle
 
-    def shared(self, a, b):
+    def shared(self, face_handle, n):
+        """Return a list of faces which share `n` nodes with another face."""
+        face = self.faces[face_handle]
+        for other_face in self.faces.values():
+            pass
         return self.nodes[a] == self.nodes[b]
 
     def touched(self, handle):
