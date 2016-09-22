@@ -19,9 +19,10 @@ from copy import deepcopy
 
 
 class PolyNode:
-    def __init__(self, x, y, z):
+    def __init__(self, x, y, z, group=0):
         self.handle = uuid.uuid4()
         self.touch = None
+        self.group = group
         self.x = x
         self.y = y
         self.z = z
@@ -69,9 +70,10 @@ class PolyNode:
 
 
 class PolyFace:
-    def __init__(self, cent_node, prev_node, next_node, original=None):
+    def __init__(self, cent_node, prev_node, next_node, group=0, original=None):
         self.handle = uuid.uuid4()
         self.touch = None
+        self.group = group
         self.cent_node = cent_node
         self.prev_node = prev_node
         self.next_node = next_node
@@ -87,47 +89,6 @@ class PolyFace:
     def thirds(self):
         pass
 
-def tesselate_butts(old):
-    new = Polyhedron()
-    n = old.nodes
-    f = old.faces
-    for node in n.values():
-        near_points = []
-        for h in node.clockwise():
-            # TODO: add flags to prevent doing the same spot twice
-            face = old.faces[h]
-            mln, mlf = thirds(face.hc, face.hl)
-            mrn, mrf = thirds(face.hc, face.hr)
-            mol, mor = thirds(face.hl, face.hl)
-            cn = center(mln, mlf, mrn, mrf, mol, mor)
-            new.add_node(mln)
-            new.add_node(mlf)
-            new.add_node(mrn)
-            new.add_node(mrf)
-            new.add_node(mol)
-            new.add_node(mor)
-            new.add_node(cn)
-
-            # solves the mid-face hexes, 6/13
-            f1 = new.add_face(cn, mln, mlf)
-            f2 = new.add_face(cn, mlf, mol)
-            f3 = new.add_face(cn, mol, mor)
-            f4 = new.add_face(cn, mor, mrf)
-            f5 = new.add_face(cn, mrf, mrn)
-            f6 = new.add_face(cn, mrn, mln)
-            near_points.append(mln)
-
-            cn.faces = [f1, f2, f3, f4, f5, f6]
-            mln.faces = None
-
-        # solves the center hex (and pents), 7/13
-        if len(near_points) == 5:
-            pass
-            #new.add_face(*near_points)
-        # so what about the connectivity?
-        # actually, each of those points will get its own pass anyway
-        # so we might only need 7
-    return new
 
 def tesselate(poly):
     # try to do it in place, maintaining connections
@@ -168,63 +129,49 @@ def hexify(poly):
         m_center = sum([m_oppo_l, m_oppo_r, m_prev_n, m_prev_f, m_next_n, m_next_f])/6
 
         # new node handles
-        h_oppo_l = poly.add_node(*tuple(m_oppo_l))
-        h_oppo_r = poly.add_node(*tuple(m_oppo_r))
-        h_prev_n = poly.add_node(*tuple(m_prev_n))
-        h_prev_f = poly.add_node(*tuple(m_prev_f))
-        h_next_n = poly.add_node(*tuple(m_next_n))
-        h_next_f = poly.add_node(*tuple(m_next_f))
-        h_center = poly.add_node(*tuple(m_center))
         # all part of same group
         group_id = uuid.uuid4()
-        poly.groups[h_oppo_l] = group_id
-        poly.groups[h_oppo_r] = group_id
-        poly.groups[h_prev_n] = group_id
-        poly.groups[h_prev_f] = group_id
-        poly.groups[h_next_n] = group_id
-        poly.groups[h_next_f] = group_id
-        poly.groups[h_center] = group_id
+        h_oppo_l = poly.add_node(*tuple(m_oppo_l), group=group_id)
+        h_oppo_r = poly.add_node(*tuple(m_oppo_r), group=group_id)
+        h_prev_n = poly.add_node(*tuple(m_prev_n), group=group_id)
+        h_prev_f = poly.add_node(*tuple(m_prev_f), group=group_id)
+        h_next_n = poly.add_node(*tuple(m_next_n), group=group_id)
+        h_next_f = poly.add_node(*tuple(m_next_f), group=group_id)
+        h_center = poly.add_node(*tuple(m_center), group=group_id)
+        # consistent color
+        # NOTE: must have duplicate vertices for each face
+        # for the colors to lay flat and not blend.
         poly.colors[group_id] = np.random.random(3)
 
         # size faces of hexagon
-        poly.add_face(h_center, h_oppo_l, h_oppo_r)
-        poly.add_face(h_center, h_oppo_r, h_next_f)
-        poly.add_face(h_center, h_next_f, h_next_n)
-        poly.add_face(h_center, h_next_n, h_prev_n)
-        poly.add_face(h_center, h_prev_n, h_prev_f)
-        poly.add_face(h_center, h_prev_f, h_oppo_l)
+        poly.add_face(h_center, h_oppo_l, h_oppo_r, group=group_id)
+        poly.add_face(h_center, h_oppo_r, h_next_f, group=group_id)
+        poly.add_face(h_center, h_next_f, h_next_n, group=group_id)
+        poly.add_face(h_center, h_next_n, h_prev_n, group=group_id)
+        poly.add_face(h_center, h_prev_n, h_prev_f, group=group_id)
+        poly.add_face(h_center, h_prev_f, h_oppo_l, group=group_id)
 
         m_old_cent = n[face.cent_node]
         m_old_prev = n[face.prev_node]
         m_old_next = n[face.next_node]
         # center triangle/part of hex
-        # part of pentagon? only get one tri at a time
-        h_old_cent = poly.add_node(*tuple(m_old_cent))
-        h_old_prev = poly.add_node(*tuple(m_old_prev))
-        h_old_next = poly.add_node(*tuple(m_old_next))
-        # copies of new nodes
-        c_oppo_l = poly.add_node(*tuple(m_oppo_l))
-        c_oppo_r = poly.add_node(*tuple(m_oppo_r))
-        c_prev_n = poly.add_node(*tuple(m_prev_n))
-        c_prev_f = poly.add_node(*tuple(m_prev_f))
-        c_next_n = poly.add_node(*tuple(m_next_n))
-        c_next_f = poly.add_node(*tuple(m_next_f))
-        # just set all to one color?
         extra_id = uuid.uuid4()
-        #color_flat = np.array([0.0, 0.0, 0.0])
-        poly.groups[h_old_cent] = extra_id
-        poly.groups[h_old_prev] = extra_id
-        poly.groups[h_old_next] = extra_id
-        poly.groups[c_oppo_l] = extra_id
-        poly.groups[c_oppo_r] = extra_id
-        poly.groups[c_prev_n] = extra_id
-        poly.groups[c_prev_f] = extra_id
-        poly.groups[c_next_n] = extra_id
-        poly.groups[c_next_f] = extra_id
+        # part of pentagon? only get one tri at a time
+        h_old_cent = poly.add_node(*tuple(m_old_cent), group=extra_id)
+        h_old_prev = poly.add_node(*tuple(m_old_prev), group=extra_id)
+        h_old_next = poly.add_node(*tuple(m_old_next), group=extra_id)
+        # copies of new nodes
+        c_oppo_l = poly.add_node(*tuple(m_oppo_l), group=extra_id)
+        c_oppo_r = poly.add_node(*tuple(m_oppo_r), group=extra_id)
+        c_prev_n = poly.add_node(*tuple(m_prev_n), group=extra_id)
+        c_prev_f = poly.add_node(*tuple(m_prev_f), group=extra_id)
+        c_next_n = poly.add_node(*tuple(m_next_n), group=extra_id)
+        c_next_f = poly.add_node(*tuple(m_next_f), group=extra_id)
+        # just set all to one color?
         poly.colors[extra_id] = np.array([0.0, 0.0, 0.0])
-        poly.add_face(h_old_cent, c_next_n, c_prev_n)
-        poly.add_face(h_old_prev, c_prev_f, c_oppo_l)
-        poly.add_face(h_old_next, c_next_f, c_oppo_r)
+        poly.add_face(h_old_cent, c_next_n, c_prev_n, group=extra_id)
+        poly.add_face(h_old_prev, c_prev_f, c_oppo_l, group=extra_id)
+        poly.add_face(h_old_next, c_next_f, c_oppo_r, group=extra_id)
 
 
 def extrude(poly):
@@ -250,11 +197,11 @@ class Polyhedron:
         self.nodes = {}
         self.faces = {}
         # maps node id -> group id
-        self.groups = {}
+        #self.groups = {}
         self.colors = {}
 
-    def add_node(self, x, y, z, normalize=False):
-        node = PolyNode(x, y, z)
+    def add_node(self, x, y, z, group=0, normalize=False):
+        node = PolyNode(x, y, z, group=group)
         if normalize: node.normalize()
         #for h, n in self.nodes.items():  #disable duplicate check for color interp.
             #if node == n:
@@ -262,8 +209,8 @@ class Polyhedron:
         self.nodes[node.handle] = node
         return node.handle
 
-    def add_face(self, hc, hl, hr):  # TODO: check for dupes
-        face = PolyFace(hc, hl, hr)
+    def add_face(self, hc, hl, hr, group=0):  # TODO: check for dupes
+        face = PolyFace(hc, hl, hr, group=group)
         self.faces[face.handle] = face
         return face.handle
 
@@ -283,14 +230,15 @@ class Polyhedron:
             verts[count+0, :] = tuple(self.nodes[face.cent_node])
             verts[count+1, :] = tuple(self.nodes[face.next_node])
             verts[count+2, :] = tuple(self.nodes[face.prev_node])
-            if len(self.groups.keys()) > 0:
-                for i, n in enumerate([face.cent_node, face.next_node, face.prev_node]):
-                    if n in self.groups.keys():
-                        color[count+i] = self.colors[self.groups[n]]
-                    else:
-                        color[count+i] = np.random.random(3)
-            else:
-                color[count:count+3] = np.random.random(3)
+            for i, n in enumerate([face.cent_node, face.next_node, face.prev_node]):
+                node = self.nodes[n]
+                rand_color = np.random.random(3)
+                if node.group != 0 and node.group in self.colors.keys():
+                    color[count+i] = self.colors[node.group]
+                else:
+                    color[count:count+3] = rand_color
+            #else:
+                #color[count:count+3] = np.random.random(3)
             index[count+0] = count+0
             index[count+1] = count+1  # messy, fix later
             index[count+2] = count+2
