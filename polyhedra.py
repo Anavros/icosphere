@@ -19,16 +19,16 @@ from copy import deepcopy
 
 
 class PolyNode:
-    def __init__(self, x, y, z, group=0):
+    def __init__(self, coords, group=0):
+        x, y, z = coords
         self.handle = uuid()
-        self.touch = None
         self.group = group
         self.x = x
         self.y = y
         self.z = z
 
     def _cast(self, x):
-        return x if type(x) is PolyNode else PolyNode(x, x, x)
+        return x if type(x) is PolyNode else PolyNode((x, x, x))
 
     def __iter__(self):
         for a in [self.x, self.y, self.z]: yield a
@@ -41,20 +41,20 @@ class PolyNode:
 
     def __add__(self, x):
         v = self._cast(x)
-        return PolyNode(self.x+v.x, self.y+v.y, self.z+v.z)
+        return PolyNode((self.x+v.x, self.y+v.y, self.z+v.z))
 
     def __radd__(self, x): # for sum()
         return self.__add__(x)
 
     def __mul__(self, x):
         v = self._cast(x)
-        return PolyNode(self.x*v.x, self.y*v.y, self.z*v.z)
+        return PolyNode((self.x*v.x, self.y*v.y, self.z*v.z))
 
     def __truediv__(self, x):
         v = self._cast(x)
-        return PolyNode(self.x/v.x, self.y/v.y, self.z/v.z)
+        return PolyNode((self.x/v.x, self.y/v.y, self.z/v.z))
 
-    def extend(self, n):
+    def extrude(self, n):
         """Transform the node's length with respect to the center of the shape."""
         self.move(self.x*n, self.y*n, self.z*n)
 
@@ -70,9 +70,9 @@ class PolyNode:
 
 
 class PolyFace:
-    def __init__(self, a, b, c, group=0):
+    def __init__(self, nodes, group=0):
+        a, b, c = nodes
         self.handle = uuid()
-        self.touch = None
         self.group = group
         self.a = a
         self.b = b
@@ -81,10 +81,6 @@ class PolyFace:
     def __iter__(self):
         for node in [self.a, self.b, self.c]:
             yield node
-
-    def normalize(self):
-        for node in self:
-            node.normalize()
 
     def halves(self):
         ab = (self.a + self.b)/2
@@ -104,18 +100,14 @@ class PolyFace:
 
 
 def tesselate(poly):
-    # TODO: deepcopies are expensive
-    new_faces = {}  # TODO: insert directly here instead of using add_face
-    for face in deepcopy(poly.faces).values():  # can't have it changing while iterating
+    new_faces = []
+    for face in poly.faces:
         ab, bc, ca = face.halves()
-        #poly.add_node(*tuple(ab))  # TODO edit add* funcs to take tuples directly
-        #poly.add_node(*tuple(bc))
-        #poly.add_node(*tuple(ca))
-        poly.add_face(face.a, ab, ca)
-        poly.add_face(face.b, ab, bc)
-        poly.add_face(face.c, bc, ca)
-        poly.add_face(ab, bc, ca)
-        del poly.faces[face.handle]
+        new_faces.append(PolyFace((face.a, ab, ca), group=uuid()))
+        new_faces.append(PolyFace((face.b, ab, bc), group=uuid()))
+        new_faces.append(PolyFace((face.c, bc, ca), group=uuid()))
+        new_faces.append(PolyFace((ab, bc, ca), group=uuid()))
+    poly.faces = new_faces
 
 
 # new algo:
@@ -126,71 +118,54 @@ def tesselate(poly):
 # and make a face like that.
 # should be over in O(n)
 def hexify(poly):
-    f = deepcopy(poly.faces)
-    for face in f.values():
+    new_faces = []
+    for face in poly.faces:
         aab, abb, bbc, bcc, cca, caa, center = face.thirds()
 
         # six faces of hexagon
         group_id = uuid()
-        poly.add_face(center, aab, abb, group=group_id)
-        poly.add_face(center, abb, bbc, group=group_id)
-        poly.add_face(center, bbc, bcc, group=group_id)
-        poly.add_face(center, bcc, cca, group=group_id)
-        poly.add_face(center, cca, caa, group=group_id)
-        poly.add_face(center, caa, aab, group=group_id)
+        new_faces.append(PolyFace((center, aab, abb), group=group_id))
+        new_faces.append(PolyFace((center, abb, bbc), group=group_id))
+        new_faces.append(PolyFace((center, bbc, bcc), group=group_id))
+        new_faces.append(PolyFace((center, bcc, cca), group=group_id))
+        new_faces.append(PolyFace((center, cca, caa), group=group_id))
+        new_faces.append(PolyFace((center, caa, aab), group=group_id))
         poly.colors[group_id] = np.random.random(3)
 
         # extra face; part of hex/pent
         extra_id = 1 # for later testing
-        poly.add_face(face.a, aab, caa, group=extra_id)
-        poly.add_face(face.b, bbc, abb, group=extra_id)
-        poly.add_face(face.c, cca, bcc, group=extra_id)
+        new_faces.append(PolyFace((face.a, aab, caa), group=extra_id))
+        new_faces.append(PolyFace((face.b, bbc, abb), group=extra_id))
+        new_faces.append(PolyFace((face.c, cca, bcc), group=extra_id))
         poly.colors[extra_id] = np.array([0.0, 0.0, 0.0])
-
-        del poly.faces[face.handle]
+    poly.faces = new_faces
 
 
 def extrude(poly):
-    # each group id gets a new elevation
-    # for sides:
-    # when you extrude a node, leave the old node behind and connect them
-    # although I don't know what to do about diagonals
-    # that might not work until we get some more ordered structure
     lengths = {}
-    for node in poly.nodes.values():
+    for face in poly.faces:
         try:
-            l = lengths[node.group]
+            l = lengths[face.group]
         except KeyError:
             l = random.choice([0.9, 1.0, 1.1])
-            lengths[node.group] = l
+            lengths[face.group] = l
         finally:
-            node.extend(l)
+            for node in face:
+                node.extrude(l)
     #return poly  # mutates, no return
 
 
 def normalize(poly):
-    for f in poly.faces.values():
-        f.normalize()
+    for f in poly.faces:
+        for n in f:
+            n.normalize()
 
 
 class Polyhedron:
     def __init__(self):
-        self.nodes = {}
-        self.faces = {}
-        self.sides = {}
+        self.faces = []
+        #self.sides = {}
         self.colors = {}
-
-    def add_node(self, x, y, z, group=0):
-        # TODO: keep track of connected nodes
-        # or not?
-        node = PolyNode(x, y, z, group=group)
-        self.nodes[node.handle] = node
-        return node
-
-    def add_face(self, a, b, c, group=0):
-        face = PolyFace(a, b, c, group=group)
-        self.faces[face.handle] = face
-        return face
 
     def construct_buffers(self):
         count = 0
@@ -198,7 +173,7 @@ class Polyhedron:
         color = np.zeros(shape=(len(self.faces)*3, 3), dtype=np.float32)
         index = np.zeros(shape=(len(self.faces)*3),    dtype=np.uint32)
         lines = np.zeros(shape=(len(self.faces)*3, 2), dtype=np.uint32)
-        for face in self.faces.values():
+        for face in self.faces:
             verts[count+0, :] = tuple(face.a)  # TODO: move inside loop
             verts[count+1, :] = tuple(face.b)
             verts[count+2, :] = tuple(face.c)
@@ -231,20 +206,16 @@ class Icosahedron(Polyhedron):
             (0,  1,  7),    # next
             (0,  7,  10),   # next
             (0, 10, 11),    # flip
-
             (2, 11, 10),    # side-next
-
             (4,  5, 11),    # side-next
             (9,  1,  5),    # side-next
             (8,  7,  1),    # side-next
             (6, 10,  7),    # side-next
-
             (4,  9,  5),    # side-next
             (9,  8,  1),    # side-next
             (8,  6,  7),    # side-next
             (6,  2, 10),    # flip
             (2,  4, 11),    # side-next?
-
             (3,  9,  4),    # next
             (3,  4,  2),    # next
             (3,  2,  6),    # next
@@ -255,10 +226,10 @@ class Icosahedron(Polyhedron):
             #(5, 4, 9), (11, 2, 4), (10, 6, 2), (7, 6, 8), (1, 9, 8),
         ]
         for i1, i2, i3 in f:
-            a = self.add_node(*v[i1])
-            b = self.add_node(*v[i2])
-            c = self.add_node(*v[i3])
-            face = self.add_face(a, b, c)
+            a = PolyNode(v[i1])
+            b = PolyNode(v[i2])
+            c = PolyNode(v[i3])
+            self.faces.append(PolyFace((a, b, c), group=uuid()))
 
 
 class FlatTile(Polyhedron):
@@ -283,7 +254,7 @@ class FlatTile(Polyhedron):
         ]
 
         for i1, i2, i3 in f:
-            hc = self.add_node(*v[i1])
-            hl = self.add_node(*v[i2])
-            hr = self.add_node(*v[i3])
-            face = self.add_face(hc, hl, hr)
+            a = PolyNode(v[i1])
+            b = PolyNode(v[i2])
+            c = PolyNode(v[i3])
+            self.faces.append(PolyFace((a, b, c), group=uuid()))

@@ -1,7 +1,11 @@
+
+Summary:
+-> 1: 5,914,240 calls in 11.929 seconds
+-> 2: 4,578,303 calls in 10.235 seconds
+-> 3: 3,454,193 calls in 8.771 seconds
+
 Old Algorithm:
-
 5914240 function calls (5610740 primitive calls) in 11.929 seconds
-
    Ordered by: standard name
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
@@ -65,6 +69,7 @@ Old Algorithm:
         1    0.000    0.000    0.000    0.000 {method 'values' of 'dict' objects}
 
 Mid-Refined Algo:
+
 4578303 function calls (4418203 primitive calls) in 10.235 seconds
 
    Ordered by: standard name
@@ -134,4 +139,47 @@ Mid-Refined Algo:
         5    0.000    0.000    0.000    0.000 {method 'values' of 'dict' objects}
 
 
-[3;J[H[2J
+More Refined:
+3454193 function calls in 8.771 seconds
+
+   Ordered by: standard name
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.030    0.030    8.771    8.771 <string>:1(<module>)
+   236360    0.488    0.000    0.644    0.000 __init__.py:47(create_string_buffer)
+        1    0.000    0.000    0.000    0.000 _weakrefset.py:38(_remove)
+        2    0.001    0.001    0.053    0.026 polyhedra.py:104(tesselate)
+        2    0.081    0.040    5.103    2.551 polyhedra.py:122(hexify)
+        1    0.095    0.095    3.582    3.582 polyhedra.py:160(normalize)
+        1    0.000    0.000    0.000    0.000 polyhedra.py:167(__init__)
+        1    0.000    0.000    0.003    0.003 polyhedra.py:196(__init__)
+   203520    0.420    0.000    5.894    0.000 polyhedra.py:22(__init__)
+   158360    0.114    0.000    1.353    0.000 polyhedra.py:31(_cast)
+   311040    0.118    0.000    0.118    0.000 polyhedra.py:34(__iter__)
+    38700    0.121    0.000    1.293    0.000 polyhedra.py:43(__add__)
+     3200    0.004    0.000    0.202    0.000 polyhedra.py:47(__radd__)
+    96960    0.291    0.000    3.776    0.000 polyhedra.py:50(__mul__)
+    22700    0.110    0.000    1.458    0.000 polyhedra.py:54(__truediv__)
+    77760    0.352    0.000    3.431    0.000 polyhedra.py:62(normalize)
+    77760    0.042    0.000    0.042    0.000 polyhedra.py:66(move)
+    29220    0.058    0.000    0.806    0.000 polyhedra.py:74(__init__)
+   103680    0.057    0.000    0.057    0.000 polyhedra.py:83(__iter__)
+      100    0.001    0.000    0.029    0.000 polyhedra.py:87(halves)
+     3200    0.141    0.000    4.098    0.001 polyhedra.py:93(thirds)
+        1    0.000    0.000    8.741    8.741 run.py:29(profile)
+   236360    1.092    0.000    1.610    0.000 uuid.py:104(__init__)
+     3200    0.003    0.000    0.004    0.000 uuid.py:218(__hash__)
+   236360    4.058    0.000    6.312    0.000 uuid.py:562(uuid4)
+     3200    0.019    0.000    0.019    0.000 {built-in method array}
+        1    0.000    0.000    8.771    8.771 {built-in method exec}
+   236360    0.356    0.000    0.356    0.000 {built-in method from_bytes}
+     3200    0.001    0.000    0.001    0.000 {built-in method hash}
+   709080    0.199    0.000    0.199    0.000 {built-in method isinstance}
+   236360    0.031    0.000    0.031    0.000 {built-in method len}
+    77760    0.041    0.000    0.041    0.000 {built-in method sqrt}
+    80960    0.331    0.000    1.138    0.000 {built-in method sum}
+    29220    0.006    0.000    0.006    0.000 {method 'append' of 'list' objects}
+   236360    0.088    0.000    0.088    0.000 {method 'count' of 'list' objects}
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 {method 'discard' of 'set' objects}
+     3200    0.023    0.000    0.023    0.000 {method 'random_sample' of 'mtrand.RandomState' objects}
