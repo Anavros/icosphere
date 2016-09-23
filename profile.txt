@@ -63,3 +63,75 @@ Old Algorithm:
      3200    0.026    0.000    0.026    0.000 {method 'random_sample' of 'mtrand.RandomState' objects}
     24940    0.014    0.000    0.014    0.000 {method 'update' of 'dict' objects}
         1    0.000    0.000    0.000    0.000 {method 'values' of 'dict' objects}
+
+Mid-Refined Algo:
+4578303 function calls (4418203 primitive calls) in 10.235 seconds
+
+   Ordered by: standard name
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.079    0.079   10.235   10.235 <string>:1(<module>)
+   235940    0.501    0.000    0.693    0.000 __init__.py:47(create_string_buffer)
+        1    0.000    0.000    0.000    0.000 _weakrefset.py:38(_remove)
+ 137004/4    0.284    0.000    0.806    0.202 copy.py:137(deepcopy)
+    79080    0.011    0.000    0.011    0.000 copy.py:192(_deepcopy_atomic)
+    13200    0.090    0.000    0.128    0.000 copy.py:223(_deepcopy_tuple)
+  13204/4    0.091    0.000    0.806    0.202 copy.py:242(_deepcopy_dict)
+    32852    0.028    0.000    0.038    0.000 copy.py:256(_keep_alive)
+13200/3300    0.086    0.000    0.754    0.000 copy.py:272(_reconstruct)
+    13200    0.008    0.000    0.013    0.000 copyreg.py:87(__newobj__)
+        3    0.000    0.000    0.000    0.000 copyreg.py:96(_slotnames)
+        2    0.001    0.001    0.078    0.039 polyhedra.py:106(tesselate)
+        2    0.085    0.043    6.284    3.142 polyhedra.py:128(hexify)
+        1    0.032    0.032    3.788    3.788 polyhedra.py:171(normalize)
+        1    0.000    0.000    0.000    0.000 polyhedra.py:177(__init__)
+       60    0.000    0.000    0.002    0.000 polyhedra.py:183(add_node)
+    29220    0.098    0.000    1.055    0.000 polyhedra.py:190(add_face)
+        1    0.000    0.000    0.003    0.003 polyhedra.py:219(__init__)
+   203520    0.414    0.000    6.091    0.000 polyhedra.py:22(__init__)
+   158360    0.122    0.000    1.418    0.000 polyhedra.py:30(_cast)
+   311040    0.122    0.000    0.122    0.000 polyhedra.py:33(__iter__)
+    38700    0.134    0.000    1.364    0.000 polyhedra.py:42(__add__)
+     3200    0.006    0.000    0.215    0.000 polyhedra.py:46(__radd__)
+    96960    0.319    0.000    3.951    0.000 polyhedra.py:49(__mul__)
+    22700    0.115    0.000    1.463    0.000 polyhedra.py:53(__truediv__)
+    77760    0.362    0.000    3.595    0.000 polyhedra.py:61(normalize)
+    77760    0.049    0.000    0.049    0.000 polyhedra.py:65(move)
+    29220    0.068    0.000    0.931    0.000 polyhedra.py:73(__init__)
+   103680    0.050    0.000    0.050    0.000 polyhedra.py:81(__iter__)
+    25920    0.110    0.000    3.755    0.000 polyhedra.py:85(normalize)
+      100    0.001    0.000    0.031    0.000 polyhedra.py:89(halves)
+     3200    0.158    0.000    4.244    0.001 polyhedra.py:95(thirds)
+        1    0.003    0.003   10.156   10.156 run.py:29(profile)
+   235940    1.031    0.000    1.599    0.000 uuid.py:104(__init__)
+     3300    0.004    0.000    0.004    0.000 uuid.py:185(__eq__)
+    39080    0.025    0.000    0.036    0.000 uuid.py:218(__hash__)
+   235940    4.333    0.000    6.625    0.000 uuid.py:562(uuid4)
+    13200    0.004    0.000    0.004    0.000 {built-in method __new__ of type object at 0x9ceec0}
+     3200    0.020    0.000    0.020    0.000 {built-in method array}
+        1    0.000    0.000   10.235   10.235 {built-in method exec}
+   235940    0.394    0.000    0.394    0.000 {built-in method from_bytes}
+    32848    0.022    0.000    0.022    0.000 {built-in method getattr}
+    13203    0.015    0.000    0.015    0.000 {built-in method hasattr}
+    39080    0.012    0.000    0.012    0.000 {built-in method hash}
+   209464    0.028    0.000    0.028    0.000 {built-in method id}
+   750720    0.245    0.000    0.245    0.000 {built-in method isinstance}
+    19648    0.008    0.000    0.008    0.000 {built-in method issubclass}
+   262340    0.039    0.000    0.039    0.000 {built-in method len}
+    77760    0.045    0.000    0.045    0.000 {built-in method sqrt}
+    80960    0.350    0.000    1.198    0.000 {built-in method sum}
+     6448    0.020    0.000    0.020    0.000 {method '__deepcopy__' of 'numpy.generic' objects}
+    13200    0.024    0.000    0.024    0.000 {method '__reduce_ex__' of 'object' objects}
+    46048    0.010    0.000    0.010    0.000 {method 'append' of 'list' objects}
+   235940    0.099    0.000    0.099    0.000 {method 'count' of 'list' objects}
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 {method 'discard' of 'set' objects}
+   275336    0.049    0.000    0.049    0.000 {method 'get' of 'dict' objects}
+        3    0.000    0.000    0.000    0.000 {method 'get' of 'mappingproxy' objects}
+    13204    0.002    0.000    0.002    0.000 {method 'items' of 'dict' objects}
+     3200    0.025    0.000    0.025    0.000 {method 'random_sample' of 'mtrand.RandomState' objects}
+    13200    0.007    0.000    0.007    0.000 {method 'update' of 'dict' objects}
+        5    0.000    0.000    0.000    0.000 {method 'values' of 'dict' objects}
+
+
+[3;J[H[2J

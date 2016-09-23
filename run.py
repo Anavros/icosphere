@@ -130,6 +130,6 @@ def scroll(point, direction):
     camera.move(0, 0, direction/10)
 
 if __name__ == '__main__':
-    #main()
-    import cProfile as prof
-    prof.run('profile()')
+    main()
+    #import cProfile as prof
+    #prof.run('profile()')
