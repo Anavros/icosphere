@@ -26,6 +26,15 @@ def main():
     rocket.launch()
 
 
+def profile():
+    p = polyhedra.Icosahedron()
+    polyhedra.tesselate(p)
+    polyhedra.tesselate(p)
+    polyhedra.hexify(p)
+    polyhedra.hexify(p)
+    polyhedra.normalize(p)
+
+
 def reset():
     global poly
     poly = polyhedra.Icosahedron()
@@ -120,4 +129,7 @@ def middle_drag(start, end, delta):
 def scroll(point, direction):
     camera.move(0, 0, direction/10)
 
-main()
+if __name__ == '__main__':
+    #main()
+    import cProfile as prof
+    prof.run('profile()')

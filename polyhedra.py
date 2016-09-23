@@ -80,6 +80,9 @@ class PolyFace:
         self.cent_node = cent_node
         self.prev_node = prev_node
         self.next_node = next_node
+        self.a = None
+        self.b = None
+        self.c = None
         self.original = original
 
     def n_shared_nodes(self, other_face, node_lookup):
@@ -116,8 +119,14 @@ def tesselate(poly):
         poly.add_face(h_oppo, h_prev, h_next)
         del poly.faces[h_face]
 
-# IDEA: add a hash tag to each node that's part of the hex
-# would work for coloring at least
+
+# new algo:
+# get copies of old faces and nodes
+# do two loops, one for faces and one for nodes
+# for each face, take thirds, preserving objects, etc
+# for each node, move a third down each connection (which we'll have to track)
+# and make a face like that.
+# should be over in O(n)
 def hexify(poly):
     n = deepcopy(poly.nodes)
     f = deepcopy(poly.faces)
@@ -162,7 +171,7 @@ def hexify(poly):
         m_old_next = n[face.next_node]
         # center triangle/part of hex
         #extra_id = uuid.uuid4()
-        extra_id = 999 # for later testing
+        extra_id = 1000000 # for later testing
         # part of pentagon? only get one tri at a time
         h_old_cent = poly.add_node(*tuple(m_old_cent), group=extra_id)
         h_old_prev = poly.add_node(*tuple(m_old_prev), group=extra_id)
@@ -228,16 +237,6 @@ class Polyhedron:
         face = PolyFace(hc, hl, hr, group=group)
         self.faces[face.handle] = face
         return face.handle
-
-    def shared(self, face_handle, n):
-        """Return a list of faces which share `n` nodes with another face."""
-        face = self.faces[face_handle]
-        for other_face in self.faces.values():
-            pass
-        return self.nodes[a] == self.nodes[b]
-
-    def touched(self, handle):
-        return self.touch == self.faces[handle].touch
 
     def construct_buffers(self):
         count = 0
