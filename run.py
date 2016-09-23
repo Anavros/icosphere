@@ -27,18 +27,18 @@ def main():
 
 
 def profile():
-    p = polyhedra.Icosahedron()
-    polyhedra.tesselate(p)
-    polyhedra.tesselate(p)
-    polyhedra.hexify(p)
-    polyhedra.hexify(p)
-    polyhedra.normalize(p)
+    poly = polyhedra.Icosahedron()
+    poly.tesselate()
+    poly.tesselate()
+    poly.hexify()
+    poly.hexify()
+    poly.normalize()
 
 
 def reset():
     global poly
     poly = polyhedra.Icosahedron()
-    polyhedra.normalize(poly)
+    poly.normalize()
 
 
 def update_planet():
@@ -88,16 +88,16 @@ def key_press(key):
         reset()
         update_planet()
     if key == 'T':
-        polyhedra.tesselate(poly)
+        poly.tesselate()
         update_planet()
     elif key == 'Y':
-        polyhedra.hexify(poly)
+        poly.hexify()
         update_planet()
     elif key == 'U':
-        polyhedra.normalize(poly)
+        poly.normalize()
         update_planet()
     elif key == 'E':
-        polyhedra.extrude(poly)
+        poly.extrude()
         update_planet()
     elif key == 'S':
         #screenshot()

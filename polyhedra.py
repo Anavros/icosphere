@@ -98,74 +98,62 @@ class PolyFace:
         center = sum([aab, abb, bbc, bcc, cca, caa])/6
         return aab, abb, bbc, bcc, cca, caa, center
 
-
-def tesselate(poly):
-    new_faces = []
-    for face in poly.faces:
-        ab, bc, ca = face.halves()
-        new_faces.append(PolyFace((face.a, ab, ca), group=uuid()))
-        new_faces.append(PolyFace((face.b, ab, bc), group=uuid()))
-        new_faces.append(PolyFace((face.c, bc, ca), group=uuid()))
-        new_faces.append(PolyFace((ab, bc, ca), group=uuid()))
-    poly.faces = new_faces
-
-
-# new algo:
-# get copies of old faces and nodes
-# do two loops, one for faces and one for nodes
-# for each face, take thirds, preserving objects, etc
-# for each node, move a third down each connection (which we'll have to track)
-# and make a face like that.
-# should be over in O(n)
-def hexify(poly):
-    new_faces = []
-    for face in poly.faces:
-        aab, abb, bbc, bcc, cca, caa, center = face.thirds()
-
-        # six faces of hexagon
-        group_id = uuid()
-        new_faces.append(PolyFace((center, aab, abb), group=group_id))
-        new_faces.append(PolyFace((center, abb, bbc), group=group_id))
-        new_faces.append(PolyFace((center, bbc, bcc), group=group_id))
-        new_faces.append(PolyFace((center, bcc, cca), group=group_id))
-        new_faces.append(PolyFace((center, cca, caa), group=group_id))
-        new_faces.append(PolyFace((center, caa, aab), group=group_id))
-        poly.colors[group_id] = np.random.random(3)
-
-        # extra face; part of hex/pent
-        extra_id = 1 # for later testing
-        new_faces.append(PolyFace((face.a, aab, caa), group=extra_id))
-        new_faces.append(PolyFace((face.b, bbc, abb), group=extra_id))
-        new_faces.append(PolyFace((face.c, cca, bcc), group=extra_id))
-        poly.colors[extra_id] = np.array([0.0, 0.0, 0.0])
-    poly.faces = new_faces
-
-
-def extrude(poly):
-    lengths = {}
-    for face in poly.faces:
-        try:
-            l = lengths[face.group]
-        except KeyError:
-            l = random.choice([0.9, 1.0, 1.1])
-            lengths[face.group] = l
-        finally:
-            for node in face:
-                node.extrude(l)
-    #return poly  # mutates, no return
-
-
-def normalize(poly):
-    for f in poly.faces:
-        for n in f:
-            n.normalize()
-
-
 class Polyhedron:
     def __init__(self):
         self.faces = []
         #self.sides = {}
         self.colors = {}
+
+    def tesselate(poly):
+        new_faces = []
+        for face in poly.faces:
+            ab, bc, ca = face.halves()
+            new_faces.append(PolyFace((face.a, ab, ca), group=uuid()))
+            new_faces.append(PolyFace((face.b, ab, bc), group=uuid()))
+            new_faces.append(PolyFace((face.c, bc, ca), group=uuid()))
+            new_faces.append(PolyFace((ab, bc, ca), group=uuid()))
+        poly.faces = new_faces
+
+    def hexify(poly):
+        new_faces = []
+        for face in poly.faces:
+            aab, abb, bbc, bcc, cca, caa, center = face.thirds()
+
+            # six faces of hexagon
+            group_id = uuid()
+            new_faces.append(PolyFace((center, aab, abb), group=group_id))
+            new_faces.append(PolyFace((center, abb, bbc), group=group_id))
+            new_faces.append(PolyFace((center, bbc, bcc), group=group_id))
+            new_faces.append(PolyFace((center, bcc, cca), group=group_id))
+            new_faces.append(PolyFace((center, cca, caa), group=group_id))
+            new_faces.append(PolyFace((center, caa, aab), group=group_id))
+            poly.colors[group_id] = np.random.random(3)
+
+            # extra face; part of hex/pent
+            extra_id = 1 # for later testing
+            new_faces.append(PolyFace((face.a, aab, caa), group=extra_id))
+            new_faces.append(PolyFace((face.b, bbc, abb), group=extra_id))
+            new_faces.append(PolyFace((face.c, cca, bcc), group=extra_id))
+            poly.colors[extra_id] = np.array([0.0, 0.0, 0.0])
+        poly.faces = new_faces
+
+    def extrude(poly):
+        lengths = {}
+        for face in poly.faces:
+            try:
+                l = lengths[face.group]
+            except KeyError:
+                l = random.choice([0.9, 1.0, 1.1])
+                lengths[face.group] = l
+            finally:
+                for node in face:
+                    node.extrude(l)
+        #return poly  # mutates, no return
+
+    def normalize(poly):
+        for f in poly.faces:
+            for n in f:
+                n.normalize()
 
     def construct_buffers(self):
         count = 0
