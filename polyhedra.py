@@ -21,8 +21,8 @@ from copy import deepcopy
 class PolyNode:
     def __init__(self, coords, group=0):
         x, y, z = coords
-        self.handle = uuid()
         self.group = group
+        self.touch = 0
         self.x = x
         self.y = y
         self.z = z
@@ -58,9 +58,9 @@ class PolyNode:
         """Transform the node's length with respect to the center of the shape."""
         self.move(self.x*n, self.y*n, self.z*n)
 
-    def normalize(self):
-        l = math.sqrt(sum(self*self))
-        self.move(self.x/l, self.y/l, self.z/l)
+    def normalize(self, n=1):
+        length = math.sqrt(sum(self*self))
+        self.move(self.x/(length/n), self.y/(length/n), self.z/(length/n))
 
     def move(self, x, y, z):
         """Move node to a new point in space while maintaining its connections."""
@@ -72,11 +72,10 @@ class PolyNode:
 class PolyFace:
     def __init__(self, nodes, group=0):
         a, b, c = nodes
-        self.handle = uuid()
         self.group = group
-        self.a = a
-        self.b = b
-        self.c = c
+        self.a = PolyNode(a)  # force duplicates
+        self.b = PolyNode(b)
+        self.c = PolyNode(c)
 
     def __iter__(self):
         for node in [self.a, self.b, self.c]:
@@ -97,6 +96,7 @@ class PolyFace:
         caa = (self.c + self.a*2)/3
         center = sum([aab, abb, bbc, bcc, cca, caa])/6
         return aab, abb, bbc, bcc, cca, caa, center
+
 
 class Polyhedron:
     def __init__(self):
