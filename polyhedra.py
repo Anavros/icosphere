@@ -174,18 +174,14 @@ class Polyhedron:
         index = np.zeros(shape=(len(self.faces)*3),    dtype=np.uint32)
         lines = np.zeros(shape=(len(self.faces)*3, 2), dtype=np.uint32)
         for face in self.faces:
-            verts[count+0, :] = tuple(face.a)  # TODO: move inside loop
-            verts[count+1, :] = tuple(face.b)
-            verts[count+2, :] = tuple(face.c)
-            if face.group in self.colors.keys():
-                color[count:count+3] = self.colors[face.group]
-            else:
-                color[count:count+3] = np.random.random(3)
-            #else:
-                #color[count:count+3] = np.random.random(3)
-            index[count+0] = count+0
-            index[count+1] = count+1  # messy, fix later
-            index[count+2] = count+2
+            for i, node in enumerate(face):
+                verts[count+i, :] = tuple(node)
+                index[count+i] = count+i
+            try:
+                face_color = self.colors[face.group]
+            except KeyError:
+                face_color = np.random.random(3)
+            color[count:count+3] = face_color  # set all three nodes to same color
             count += 3
         return verts, index, lines, color
 
