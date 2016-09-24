@@ -60,6 +60,7 @@ class PolyFace:
     def __init__(self, nodes, group=0):
         a, b, c = nodes
         self.group = group
+        # assume that a is always the center node
         self.a = PolyNode(a)  # force duplicates
         self.b = PolyNode(b)
         self.c = PolyNode(c)
@@ -98,7 +99,6 @@ class PolyGroup:
 class Polyhedron:
     def __init__(self):
         self.faces = []
-        #self.sides = {}
         self.colors = {}
 
     def tesselate(poly):
@@ -128,20 +128,6 @@ class Polyhedron:
             new_faces.append(PolyFace((center, caa, aab), group=group_id))
             poly.colors[group_id] = np.random.random(3)
 
-            # extra face; part of hex/pent
-            #extra_id = 1 # for later testing
-            #new_faces.append(PolyFace((face.a, aab, caa), group=extra_id))
-            #new_faces.append(PolyFace((face.b, bbc, abb), group=extra_id))
-            #new_faces.append(PolyFace((face.c, cca, bcc), group=extra_id))
-            #poly.colors[extra_id] = np.array([0.0, 0.0, 0.0])
-
-            # new extra face:
-            #new_faces.append(PolyFace((face.a, aab, caa), group=extra_id))
-            # first, see if a group already exists
-            # it will be grouped around its center point, face.a
-            # so lookup if face.a has already been started
-            # if not, start a new group with face.a
-            # if so, add it to that group
             extra_sets = [
                 (face.a, aab, caa),
                 (face.b, bbc, abb),
@@ -149,21 +135,21 @@ class Polyhedron:
             ]
             for new_center, a, b in extra_sets:
                 try:
-                    extra_id = extra_group_centers[ tuple(new_center) ]  # highlight error
+                    extra_id = extra_group_centers[tuple(new_center)]
                 except KeyError:
                     extra_id = uuid()
                     poly.colors[extra_id] = np.random.random(3)
-                    extra_group_centers[ tuple(new_center) ] = extra_id
-
+                    extra_group_centers[tuple(new_center)] = extra_id
                 face = PolyFace((new_center, a, b), group=extra_id)
                 try:
                     extra_groups[extra_id].append(face)
                 except KeyError:
                     extra_groups[extra_id] = [face]
                 new_faces.append(face)
-
         poly.faces = new_faces
 
+    # BUG: extra groups can not form after extrusion
+    # normalize vectors before checking for equality
     def extrude(poly):
         lengths = {}
         for face in poly.faces:
@@ -181,45 +167,55 @@ class Polyhedron:
             for n in f:
                 n.normalize()
 
-    def construct_buffers(self):
-        count = 0
-        verts = np.zeros(shape=(len(self.faces)*3, 3), dtype=np.float32)
-        color = np.zeros(shape=(len(self.faces)*3, 3), dtype=np.float32)
-        index = np.zeros(shape=(len(self.faces)*3),    dtype=np.uint32)
-        lines = np.zeros(shape=(len(self.faces)*3, 2), dtype=np.uint32)
+    def buffers(self):
+        count = 1
+        verts = np.zeros(shape=(len(self.faces)*3+1, 3), dtype=np.float32)
+        color = np.zeros(shape=(len(self.faces)*3+1, 3), dtype=np.float32)
+        index = np.zeros(shape=(len(self.faces)*3+1),    dtype=np.uint32)
+        lines = np.zeros(shape=(len(self.faces)*3+1, 2), dtype=np.uint32)
+        sides = np.zeros(shape=(len(self.faces)*3+1),    dtype=np.uint32)
+        verts[0, :] = [0, 0, 0]  # origin point
+        color[0, :] = [0, 0, 0]
         for face in self.faces:
             for i, node in enumerate(face):
                 verts[count+i, :] = tuple(node)
-                index[count+i] = count+i
+                index[count+i-1] = count+i
+            sides[count-1:count-1+3] = [0, count+1, count+2]
             try:
                 face_color = self.colors[face.group]
             except KeyError:
                 face_color = np.random.random(3)
             color[count:count+3] = face_color  # set all three nodes to same color
             count += 3
-        return verts, index, lines, color
+        return verts, color, index, lines, sides
 
+    # TODO: merge into construct_buffers
     def construct_side_buffers(self):
         count = 1
-        verts = np.zeros(shape=(len(self.faces)*3 + 1, 3), dtype=np.float32)
-        color = np.zeros(shape=(len(self.faces)*3 + 1, 3), dtype=np.float32)
-        index = np.zeros(shape=(len(self.faces)*3 + 1, 3), dtype=np.uint32)
+        verts = np.zeros(shape=(len(self.faces)*2 + 1, 3), dtype=np.float32)
+        color = np.zeros(shape=(len(self.faces)*2 + 1, 3), dtype=np.float32)
+        index = np.zeros(shape=(len(self.faces)*2 + 1, 3), dtype=np.uint32)
         verts[0, :] = [0, 0, 0]  # origin point
         color[0, :] = [0, 0, 0]
         for face in self.faces:
-            a, b, c = face
-            verts[count+0] = tuple(a)
-            verts[count+1] = tuple(b)
-            verts[count+2] = tuple(c)
+            a, b, c = face  # assume that a is the center node
+            #verts[count+0] = tuple(a)
+            #verts[count+1] = tuple(b)
+            #verts[count+2] = tuple(c)
+            #index[count+0] = [0, count+0, count+1]
+            #index[count+1] = [0, count+1, count+2]
+            #index[count+2] = [0, count+2, count+0]
+            verts[count+0] = tuple(b)
+            verts[count+1] = tuple(c)
             index[count+0] = [0, count+0, count+1]
-            index[count+1] = [0, count+1, count+2]
-            index[count+2] = [0, count+2, count+0]
+            index[count+1] = [0, count+1, count+0]
             try:
-                color[count:count+3] = self.colors[face.group]
+                color[count:count+2] = self.colors[face.group]
             except KeyError:
-                color[count:count+3] = np.random.random(3)
-            count += 3
+                color[count:count+2] = np.random.random(3)
+            count += 2
         return verts, index, color
+
 
 class Icosahedron(Polyhedron):
     def __init__(self):

@@ -42,9 +42,8 @@ def reset():
 
 
 def update_planet():
-    planet.verts, planet.index, planet.lines, planet.color = poly.construct_buffers()
-    planet.side_verts, planet.side_index, planet.side_color = poly.construct_side_buffers()
-    planet.side_index = aux.buffer(planet.side_index)
+    planet.verts, planet.color, planet.index, planet.lines, planet.sides = poly.buffers()
+    planet.sides = aux.buffer(planet.sides)
     planet.index = aux.buffer(planet.index)
     planet.lines = aux.buffer(planet.lines)
 
@@ -76,17 +75,10 @@ def draw():
     program['m_view'] = camera.transform
     program['m_proj'] = camera.proj
 
-    program['u_color'] = (0.5, 0.6, 0.7)
-    program.draw('triangles', planet.index)
-    program['u_color'] = (0.2, 0.3, 0.4)
-    program.draw('lines', planet.lines)
-    program['u_color'] = (0.0, 0.0, 0.1)
-    program.draw('points')
-
-    program['u_color'] = (0.4, 0.5, 0.6)
-    program['a_position'] = planet.side_verts
-    program['a_coloring'] = planet.side_color
-    program.draw('triangles', planet.side_index)
+    program['u_color'] = (0.5, 0.6, 0.7); program.draw('triangles', planet.index)
+    program['u_color'] = (0.4, 0.5, 0.6); program.draw('triangles', planet.sides)
+    program['u_color'] = (0.2, 0.3, 0.4); program.draw('lines', planet.lines)
+    program['u_color'] = (0.0, 0.0, 0.1); program.draw('points')
 
 
 @rocket.attach
