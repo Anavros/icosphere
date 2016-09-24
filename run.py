@@ -43,6 +43,8 @@ def reset():
 
 def update_planet():
     planet.verts, planet.index, planet.lines, planet.color = poly.construct_buffers()
+    planet.side_verts, planet.side_index = poly.construct_side_buffers()
+    planet.side_index = aux.buffer(planet.side_index)
     planet.index = aux.buffer(planet.index)
     planet.lines = aux.buffer(planet.lines)
 
@@ -80,6 +82,10 @@ def draw():
     program.draw('lines', planet.lines)
     program['u_color'] = (0.0, 0.0, 0.1)
     program.draw('points')
+
+    program['a_position'] = planet.side_verts
+    program['a_coloring'] = planet.side_verts
+    program.draw('triangles', planet.side_index)
 
 
 @rocket.attach

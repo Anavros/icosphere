@@ -199,6 +199,22 @@ class Polyhedron:
             count += 3
         return verts, index, lines, color
 
+    def construct_side_buffers(self):
+        count = 1
+        verts = np.zeros(shape=(len(self.faces)*3 + 1, 3), dtype=np.float32)
+        #color = np.zeros(shape=(len(self.faces)*3 + 1, 3), dtype=np.float32)
+        index = np.zeros(shape=(len(self.faces)*3 + 1, 3), dtype=np.uint32)
+        verts[0, :] = [0, 0, 0]  # origin point
+        #color[0, :] = [0, 0, 0]
+        for a, b, c in self.faces:
+            verts[count+0] = tuple(a)
+            verts[count+1] = tuple(b)
+            verts[count+2] = tuple(c)
+            index[count+0] = [0, count+0, count+1]
+            index[count+1] = [0, count+1, count+2]
+            index[count+2] = [0, count+2, count+0]
+            count += 3
+        return verts, index
 
 class Icosahedron(Polyhedron):
     def __init__(self):
