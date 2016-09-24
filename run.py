@@ -13,7 +13,7 @@ camera = aux.View(fov=45)
 camera.move(z=(-6))
 program = aux.load_shaders('vertex.glsl', 'fragment.glsl')
 #pic_dir = str(uuid4())
-#pic_n = 0
+pic_n = 0
 #go = False
 #os.mkdir(os.path.join('screenshots', pic_dir))
 #print('made directory', os.path.join('screenshots', pic_dir))
@@ -52,8 +52,8 @@ def update_planet():
 def screenshot():
     output = gloo.wrappers.read_pixels()
     global pic_n
-    io.imsave(os.path.join('screenshots', pic_dir, '{}.png'.format(pic_n)), output)
-    print('screenshot saved as screenshots/{}/{}.png'.format(pic_dir, pic_n))
+    io.imsave(os.path.join('screenshots', '{}.png'.format(pic_n)), output)
+    print('screenshot saved as screenshots/{}.png'.format(pic_n))
     pic_n += 1
 
 
@@ -107,8 +107,7 @@ def key_press(key):
         poly.extrude()
         update_planet()
     elif key == 'S':
-        #screenshot()
-        pass
+        screenshot()
     elif key == 'N':
         planet.rotate(x=22.5, y=22.5)
     #elif key == 'G':

@@ -1,5 +1,6 @@
 
 # Icosphere
-Currently on hiatus.
+Description coming soon!
 
-![Picture of geometry with subdivision and extrusion.](color.png)
+![Picture of hex planet.](hex.png)
+![Picture of extruded triangle sphere.](color.png)
