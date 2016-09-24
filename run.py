@@ -7,10 +7,13 @@ from vispy import gloo, io
 from uuid import uuid4
 import os
 
+Poly = polyhedra.Icosahedron
+#Poly = polyhedra.FlatTile
+
+
 planet = aux.Mover()
-poly = polyhedra.Icosahedron()
 camera = aux.View(fov=45)
-camera.move(z=(-6))
+camera.move(z=(-6), y=-1)
 program = aux.load_shaders('vertex.glsl', 'fragment.glsl')
 #pic_dir = str(uuid4())
 pic_n = 0
@@ -27,7 +30,7 @@ def main():
 
 
 def profile():
-    poly = polyhedra.Icosahedron()
+    poly = Poly()
     poly.tesselate()
     poly.tesselate()
     poly.hexify()
@@ -37,8 +40,8 @@ def profile():
 
 def reset():
     global poly
-    poly = polyhedra.Icosahedron()
-    poly.normalize()
+    poly = Poly()
+    #poly.normalize()
 
 
 def update_planet():
@@ -77,8 +80,8 @@ def draw():
 
     program['u_color'] = (0.5, 0.6, 0.7); program.draw('triangles', planet.index)
     program['u_color'] = (0.4, 0.5, 0.6); program.draw('triangles', planet.sides)
-    program['u_color'] = (0.2, 0.3, 0.4); program.draw('lines', planet.lines)
-    program['u_color'] = (0.0, 0.0, 0.1); program.draw('points')
+    #program['u_color'] = (0.2, 0.3, 0.4); program.draw('lines', planet.lines)
+    #program['u_color'] = (0.0, 0.0, 0.1); program.draw('points')
 
 
 @rocket.attach
@@ -102,9 +105,6 @@ def key_press(key):
         screenshot()
     elif key == 'N':
         planet.rotate(x=22.5, y=22.5)
-    #elif key == 'G':
-        #global go
-        #go = True
 
 
 @rocket.attach
