@@ -1,21 +1,8 @@
 
-import math
-from uuid import uuid4 as uuid
 import numpy as np
-import random
-import itertools
-from copy import deepcopy
-
-
-# new idea
-# base it around iterating over points at effectively random
-# each point stores how many faces are connected to it
-# and each face knows it's orientation
-# we can check if the face center is at the point
-# otherwise we can check the other points on the face
-# one of them will match
-# extrapolate the rest from there
-# this gives access to each face and each vertex
+from math import sqrt
+from random import choice
+from uuid import uuid4 as uuid
 
 
 class PolyNode:
@@ -59,7 +46,7 @@ class PolyNode:
         self.move(self.x*n, self.y*n, self.z*n)
 
     def normalize(self, n=1):
-        length = math.sqrt(sum(self*self))
+        length = sqrt(sum(self*self))
         self.move(self.x/(length/n), self.y/(length/n), self.z/(length/n))
 
     def move(self, x, y, z):
@@ -98,6 +85,16 @@ class PolyFace:
         return aab, abb, bbc, bcc, cca, caa, center
 
 
+class PolyGroup:
+    def __init__(self, faces, group_id):
+        self.faces = faces
+        self.group = group_id
+
+    def __iter__(self):
+        for face in self.faces:
+            yield face
+
+
 class Polyhedron:
     def __init__(self):
         self.faces = []
@@ -116,6 +113,8 @@ class Polyhedron:
 
     def hexify(poly):
         new_faces = []
+        extra_group_centers = {}  # center node -> group id
+        extra_groups = {}  # group id -> list of faces
         for face in poly.faces:
             aab, abb, bbc, bcc, cca, caa, center = face.thirds()
 
@@ -130,11 +129,39 @@ class Polyhedron:
             poly.colors[group_id] = np.random.random(3)
 
             # extra face; part of hex/pent
-            extra_id = 1 # for later testing
-            new_faces.append(PolyFace((face.a, aab, caa), group=extra_id))
-            new_faces.append(PolyFace((face.b, bbc, abb), group=extra_id))
-            new_faces.append(PolyFace((face.c, cca, bcc), group=extra_id))
-            poly.colors[extra_id] = np.array([0.0, 0.0, 0.0])
+            #extra_id = 1 # for later testing
+            #new_faces.append(PolyFace((face.a, aab, caa), group=extra_id))
+            #new_faces.append(PolyFace((face.b, bbc, abb), group=extra_id))
+            #new_faces.append(PolyFace((face.c, cca, bcc), group=extra_id))
+            #poly.colors[extra_id] = np.array([0.0, 0.0, 0.0])
+
+            # new extra face:
+            #new_faces.append(PolyFace((face.a, aab, caa), group=extra_id))
+            # first, see if a group already exists
+            # it will be grouped around its center point, face.a
+            # so lookup if face.a has already been started
+            # if not, start a new group with face.a
+            # if so, add it to that group
+            extra_sets = [
+                (face.a, aab, caa),
+                (face.b, bbc, abb),
+                (face.c, cca, bcc),
+            ]
+            for new_center, a, b in extra_sets:
+                try:
+                    extra_id = extra_group_centers[ tuple(new_center) ]  # highlight error
+                except KeyError:
+                    extra_id = uuid()
+                    poly.colors[extra_id] = np.random.random(3)
+                    extra_group_centers[ tuple(new_center) ] = extra_id
+
+                face = PolyFace((new_center, a, b), group=extra_id)
+                try:
+                    extra_groups[extra_id].append(face)
+                except KeyError:
+                    extra_groups[extra_id] = [face]
+                new_faces.append(face)
+
         poly.faces = new_faces
 
     def extrude(poly):
@@ -143,12 +170,11 @@ class Polyhedron:
             try:
                 l = lengths[face.group]
             except KeyError:
-                l = random.choice([0.9, 1.0, 1.1])
+                l = choice([0.95, 1.0, 1.05])
                 lengths[face.group] = l
             finally:
                 for node in face:
                     node.extrude(l)
-        #return poly  # mutates, no return
 
     def normalize(poly):
         for f in poly.faces:
