@@ -2,7 +2,7 @@
 # Icosphere
 Icosphere -- a procedurally generated, regularly-tiled sphere made of hexagons and pentagons.
 
-![Picture of hex planet.](hex.png)
+![Picture of hex planet.](images/hex.png)
 
 ### Description
 Icosphere is a computational geometry project written in python and using the wonderful `vispy` library for rendering. The geometry is creating using a basic icosahedron, and can be manipulated in real time to produce different levels and types of tesselation. That doesn't make a whole lot of sense but this is a rough draft.
