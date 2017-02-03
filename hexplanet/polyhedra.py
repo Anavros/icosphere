@@ -4,6 +4,16 @@ from math import sqrt
 from random import choice
 from uuid import uuid4 as uuid
 
+# Here's an idea:
+# Generate the subdivided coordinates once, for a single triangle, then
+# duplicate that triangle into the twenty positions necessary to form an
+# icosahedron, then normalize all vertices.
+# This way, the subdivision happens on a flat plane, where the math will be
+# easier. There can be a walking algorithm that will visit each sub-face of the
+# larger triangle. Then the edges between great triangles will be special cases.
+# Note that the points where five great triangles meet is already a special
+# case; those are the locations of the twelve pentagons.
+
 
 class PolyNode:
     def __init__(self, coords, group=0):
@@ -162,6 +172,24 @@ class Polyhedron:
                 for node in face:
                     node.extrude(l)
 
+    def ordextrude(poly):
+        """
+        Extrude each face in order. Used to visualize the order of the walk over
+        all faces.
+        """
+        n = 0.5
+        lens = {}
+        for face in poly.faces:
+            try:
+                l = lens[face.group]
+            except KeyError:
+                l = n
+                lens[face.group] = l
+                n += 0.01
+            finally:
+                for node in face:
+                    node.extrude(l)
+
     def normalize(poly):
         for f in poly.faces:
             for n in f:
@@ -261,3 +289,13 @@ class FlatTile(Polyhedron):
             b = PolyNode(v[i2])
             c = PolyNode(v[i3])
             self.faces.append(PolyFace((a, b, c), group=uuid()))
+
+
+class Triangle(Polyhedron):
+    def __init__(self):
+        Polyhedron.__init__(self)
+        self.faces = [ PolyFace( (
+            PolyNode(( 0.0, +1.0,  0.1)),
+            PolyNode((-1.0, -1.0,  0.1)),
+            PolyNode((+1.0, -1.0,  0.1)),
+        ), group=uuid() ) ]

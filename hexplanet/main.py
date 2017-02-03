@@ -8,13 +8,14 @@ import os
 
 from . import polyhedra
 
-Poly = polyhedra.Icosahedron
+#Poly = polyhedra.Icosahedron
 #Poly = polyhedra.FlatTile
+Poly = polyhedra.Triangle
 
 
 planet = aux.Mover()
 camera = aux.View(fov=45)
-camera.move(z=(-6), y=-1)
+camera.move(z=(-6))
 program = aux.load_shaders('shaders/vertex.glsl', 'shaders/fragment.glsl')
 #pic_dir = str(uuid4())
 pic_n = 0
@@ -101,6 +102,9 @@ def key_press(key):
         update_planet()
     elif key == 'E':
         poly.extrude()
+        update_planet()
+    elif key == 'O':
+        poly.ordextrude()
         update_planet()
     elif key == 'S':
         screenshot()

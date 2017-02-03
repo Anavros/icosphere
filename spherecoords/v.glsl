@@ -4,12 +4,15 @@
 attribute float rad;
 attribute float azi;
 attribute float inc;
+uniform mat4 modl;
+uniform mat4 view;
+uniform mat4 proj;
 
 vec4 spherical(float rad, float azi, float inc) {
     return vec4(rad*sin(inc)*cos(azi), rad*sin(inc)*sin(azi), rad*cos(inc), 1.0);
 }
 
 void main(void) {
-    gl_Position = spherical(rad, azi, inc);
+    gl_Position = proj * view * modl * spherical(rad, azi, inc);
     gl_PointSize = 10.0;
 }
