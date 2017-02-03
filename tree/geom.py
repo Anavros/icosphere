@@ -4,12 +4,27 @@ import numpy as np
 
 def buffers(root):
     # Add (a, b, c) in t, then recurse on all subdivisions and repeat.
-    print(root.depth)
-    print(root.faces)
-    verts = np.zeros(shape=(root.faces*30, 2), dtype=np.float32)
-    for i, v in enumerate(root):
-        verts[i, :] = v
+    #print(root.depth)
+    #print(root.faces)
+    verts = np.zeros(shape=(root.faces*3, 2), dtype=np.float32)
+    i = 0
+    for face in root.traverse():
+        verts[i+0, :] = face.a
+        verts[i+1, :] = face.b
+        verts[i+2, :] = face.c
+        i += 3
+    print(verts)
     return verts
+
+
+def count(root):
+    i = 0
+    for tri in root.traverse():
+        print("Verts:", tri.a, tri.b, tri.c)
+        print("Depth:", tri.depth)
+        print("Faces:", tri.faces)
+        i += 1
+    print("Total:", i)
 
 
 def midpoint(a, b):
@@ -35,13 +50,15 @@ class Triangle:
             self.divs = None
 
     def __iter__(self):
-        # Think this is depth-first traversal.
         for x in [self.a, self.b, self.c]:
             yield x
-            if self.divs is not None:
-                for sub in self.divs:
-                    for y in sub:
-                        yield y
+
+    def traverse(self):
+        yield self
+        if self.divs is not None:
+            for tri in self.divs:
+                for x in tri.traverse():
+                    yield x
 
 
 class Division:
@@ -55,5 +72,5 @@ class Division:
         self.m = Triangle(ca, ab, bc, depth)
 
     def __iter__(self):
-        for x in [self.a, self.b, self.c, self.m]:
-            yield x
+        for div in [self.a, self.b, self.c, self.m]:
+            yield div

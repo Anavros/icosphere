@@ -13,6 +13,7 @@ base = [
     (+1.0, -1.0,),
 ]
 tree = geom.Triangle(*base, depth=1)
+#geom.count(tree)
 buff = geom.buffers(tree)
 
 
