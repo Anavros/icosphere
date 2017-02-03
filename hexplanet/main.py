@@ -8,9 +8,9 @@ import os
 
 from . import polyhedra
 
-#Poly = polyhedra.Icosahedron
+Poly = polyhedra.Icosahedron
 #Poly = polyhedra.FlatTile
-Poly = polyhedra.Triangle
+#Poly = polyhedra.Triangle
 
 
 planet = aux.Mover()
