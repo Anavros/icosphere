@@ -4,41 +4,48 @@ import numpy as np
 from math import pi
 
 
-program = rocket.program("v.glsl", "f.glsl")
-ang = []
-rad = []
-phi = []
-# 2*pi divided into however many parts
-top = 2*pi
-n_lat = 6
-n_lon = 12
-s_lat = top/n_lat
-s_lon = top/n_lon
-n = 0.0
-p = 0.0
-for _ in range(n_lat):
-    for _ in range(n_lon):
-        ang.append(n)
-        rad.append(0.75)
-        phi.append(p)
-        n += s_lon
-    p += s_lat
-ang = np.array(ang, dtype=np.float32)
-rad = np.array(rad, dtype=np.float32)
-phi = np.array(rad, dtype=np.float32)
+def init():
+    global program
+    program = rocket.program("v.glsl", "f.glsl")
 
 
-def main():
-    rocket.prep()
-    rocket.launch()
+def generate():
+    global rad, azi, inc
+    rad = []
+    azi = []
+    inc = []
+    # 2*pi divided into however many parts
+    c_azi = 6
+    c_inc = 12
+    s_azi = 2*pi/c_azi
+    s_inc = 1*pi/c_inc
+    a = -pi
+    i = 0.0
+    for _ in range(c_inc):
+        for _ in range(c_azi):
+            rad.append(0.75)
+            azi.append(a)
+            inc.append(i)
+            a += s_azi
+        i += s_inc
+    rad = np.array(rad, dtype=np.float32)
+    azi = np.array(azi, dtype=np.float32)
+    inc = np.array(inc, dtype=np.float32)
 
 
 @rocket.attach
 def draw():
     program['rad'] = rad
-    program['ang'] = ang
-    program['phi'] = phi
+    program['azi'] = azi
+    program['inc'] = inc
     program.draw('points')
+
+
+def main():
+    init()
+    generate()
+    rocket.prep()
+    rocket.launch()
 
 
 if __name__ == '__main__':
