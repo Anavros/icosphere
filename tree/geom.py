@@ -100,6 +100,28 @@ class Triangle:
         for x in [self.a, self.b, self.c]:
             yield x
 
+    def __contains__(self, point):
+        """
+        Use barycentric coordinates to check if a point lies within the bounds
+        of this triangle.
+        """
+        ax, ay = self.a
+        bx, by = self.b
+        cx, cy = self.c
+        px, py = point
+        div = ((ax * by) - (ax * cy) - (bx * ay) + (bx * cy) + (cx * ay) - (cx * by))
+        #((X1 * Y2) - (X1 * Y3) - (X2 * Y1) + (X2 * Y3) + (X3 * Y1) - (X3 * Y2))
+        u = ((px * by) - (px * cy) - (bx * py) + (bx * cy) + (cx * py) - (cx * by)) / div
+        #((X4 * Y2) - (X4 * Y3) - (X2 * Y4) + (X2 * Y3) + (X3 * Y4) - (X3 * Y2))
+        v = ((ax * py) - (ax * cy) - (px * ay) + (px * cy) + (cx * ay) - (cx * py)) / div
+        #((X1 * Y4) - (X1 * Y3) - (X4 * Y1) + (X4 * Y3) + (X3 * Y1) - (X3 * Y4))
+        w = ((ax * by) - (ax * py) - (bx * ay) + (bx * py) + (px * ay) - (px * by)) / div
+        #((X1 * Y2) - (X1 * Y4) - (X2 * Y1) + (X2 * Y4) + (X4 * Y1) - (X4 * Y2))
+        print("U:", u)
+        print("W:", w)
+        print("V:", v)
+        return all([u > 0, v > 0, w > 0])
+
     def traverse(self):
         """
         Iterate over every triangle in the tree, including the triangles that

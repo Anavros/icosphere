@@ -22,8 +22,9 @@ def main():
 
 
 def refresh():
-    global verts, index, color
-    verts, index, color = geom.bottom(geom.Triangle(*base, depth=depth))
+    global shape, verts, index, color
+    shape = geom.Triangle(*base, depth=depth)
+    verts, index, color = geom.bottom(shape)
 
 
 @rocket.attach
@@ -42,6 +43,13 @@ def key_press(key):
     if key == 'T':
         depth += 1
         refresh()
+
+
+@rocket.attach
+def left_click(point):
+    point = rocket.screen_to_world(point)
+    print(point)
+    print(point in shape)
 
 
 if __name__ == '__main__':
