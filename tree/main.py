@@ -17,13 +17,18 @@ depth = 0
 
 def main():
     rocket.prep()
+    regen()
     refresh()
     rocket.launch()
 
 
+def regen():
+    global shape
+    shape = geom.Triangle(*base, depth=depth)
+
+
 def refresh():
     global shape, verts, index, color
-    shape = geom.Triangle(*base, depth=depth)
     verts, index, color = geom.bottom(shape)
 
 
@@ -39,17 +44,26 @@ def key_press(key):
     global depth
     if key == 'R':
         depth = 0
+        regen()
         refresh()
     if key == 'T':
         depth += 1
+        regen()
         refresh()
 
 
 @rocket.attach
 def left_click(point):
+    global shape
     point = rocket.screen_to_world(point)
-    print(point)
-    print(point in shape)
+    sub = shape.locate(point)
+    if sub is not None:
+        print(sub)
+        sub.color = (1.0, 1.0, 1.0)
+        refresh()
+        print("Found")
+    else:
+        print("Not Found")
 
 
 if __name__ == '__main__':

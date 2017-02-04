@@ -117,10 +117,26 @@ class Triangle:
         #((X1 * Y4) - (X1 * Y3) - (X4 * Y1) + (X4 * Y3) + (X3 * Y1) - (X3 * Y4))
         w = ((ax * by) - (ax * py) - (bx * ay) + (bx * py) + (px * ay) - (px * by)) / div
         #((X1 * Y2) - (X1 * Y4) - (X2 * Y1) + (X2 * Y4) + (X4 * Y1) - (X4 * Y2))
-        print("U:", u)
-        print("W:", w)
-        print("V:", v)
+        #print("U:", u)
+        #print("W:", w)
+        #print("V:", v)
         return all([u > 0, v > 0, w > 0])
+
+    def locate(self, point):
+        """
+        Traverse the hierarchy until the smallest triangle containing a
+        certain point is found.
+        """
+        if point in self:
+            if self.divs is None:
+                return self
+            else:
+                for tri in self.divs:
+                    found = tri.locate(point)
+                    if found is not None:
+                        return found
+        else:
+            return None
 
     def traverse(self):
         """
