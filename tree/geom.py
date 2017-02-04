@@ -1,5 +1,6 @@
 
 import numpy as np
+from math import sqrt
 
 
 def bottom(root):
@@ -137,6 +138,15 @@ class Triangle:
                         return found
         else:
             return None
+
+    def distance(self, point):
+        """
+        Calculate how far the center of this triangle is from a point.
+        """
+        x = sum([self.a[0], self.b[0], self.c[0]]) / 3
+        y = sum([self.a[1], self.b[1], self.c[1]]) / 3
+        a, b = point
+        return sqrt((a-x)**2+(b-y)**2)
 
     def traverse(self):
         """

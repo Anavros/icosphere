@@ -52,11 +52,15 @@ def key_press(key):
         refresh()
 
 
-@rocket.attach
-def left_click(point):
-    global shape
-    point = rocket.screen_to_world(point)
-    sub = shape.locate(point)
+def recolor(root, point):
+    for tri in root.traverse():
+        d = tri.distance(point)/2
+        tri.color = (d, d, d)
+    refresh()
+
+
+def highlight(root, point):
+    sub = root.locate(point)
     if sub is not None:
         print(sub)
         sub.color = (1.0, 1.0, 1.0)
@@ -64,6 +68,19 @@ def left_click(point):
         print("Found")
     else:
         print("Not Found")
+
+
+def rootdistance(root, point):
+    print(root.distance(point))
+
+
+@rocket.attach
+def left_click(point):
+    global shape
+    point = rocket.screen_to_world(point)
+    #rootdistance(shape, point)
+    #highlight(shape, point)
+    recolor(shape, point)
 
 
 if __name__ == '__main__':
