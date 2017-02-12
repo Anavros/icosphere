@@ -82,9 +82,15 @@ class Triangle:
         A subdividing triangle. Arguments are (x, y) pairs for each of the three
         corners.
         """
+        # Points in cartesian space.
         self.a = a
         self.b = b
         self.c = c
+        # For the adjacency graph.
+        self.next_ab = None
+        self.next_bc = None
+        self.next_ca = None
+        # self.divs is for the tree hierarchy.
         self.depth = depth
         self.color = color
         self.faces = sum(4**level for level in range(0, depth+1))
@@ -172,6 +178,7 @@ class Triangle:
                     yield x
 
 
+# TODO: Hexagonal divisions.
 class Division:
     def __init__(self, t, depth, color):
         ab = midpoint(t.a, t.b)

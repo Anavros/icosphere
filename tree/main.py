@@ -54,7 +54,7 @@ def key_press(key):
 
 def recolor(root, point):
     for tri in root.traverse():
-        d = tri.distance(point)/2
+        d = 1-tri.distance(point)/2
         tri.color = (d, d, d)
     refresh()
 

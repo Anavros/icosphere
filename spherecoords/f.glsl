@@ -1,5 +1,8 @@
 #version 120
 
+uniform sampler2D slate;
+uniform vec4 color;
+
 void main(void) {
-    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+    gl_FragColor = texture2D(slate, gl_TexCoord[0].st) + color;
 }
