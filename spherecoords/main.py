@@ -152,7 +152,7 @@ def hover(point):
     x1, x2 = max(0, x-50), min(499, x+50)
     y1, y2 = max(0, y-50), min(499, y+50)
     slate[x1:x2, y1:y2, :] = 0
-    print(raycast(point))
+    raycast(point)
 
 
 def raycast(screen_point):
@@ -161,15 +161,32 @@ def raycast(screen_point):
     invview = np.linalg.inv(camera.transform)
     invmodl = np.linalg.inv(sphere.transform)
     x, y = rocket.screen_to_world(screen_point)
-    x, y, _, _ = np.dot(invproj, [x, y, -1.0, 1.0])
-    x, y, z, _ = np.dot(invview, [x, y, -1.0, 0.0])
-    vec = normalize([x, y, z])
-    return vec
+    #x, y, _, _ = np.dot(invproj, [x, y, -1.0, 1.0])
+    #x, y, z, _ = np.dot(invview, [x, y, -1.0, 0.0])
+    #x, y, z, _ = np.dot(invmodl, [x, y, z, 0.0])
+    x, y, z, _ = np.dot(invview, np.dot(invproj, [x, y, -1.0, 1.0]))
+    d = normalize(np.array([x, y, z]))  # direction unit vector
+    origin = np.array([0, 0, 0])
+    center = np.array([0, 0, 0])
+    radius = 1
+    #print(d)
+
+    m = origin - center
+    b = np.dot(m, d)
+    c = np.dot(m, m) - radius**2
+    #print(b, c)
+
+    discriminant = b**2 - c
+    print(discriminant)
+    if discriminant <= 0:
+        print("miss")
+    else:
+        print("hit")
 
 
 def normalize(vector):
-    mag = sqrt(abs(sum([n**2 for n in vector])))
-    return [n/mag for n in vector]
+    mag = np.linalg.norm(vector, ord=1)
+    return vector/mag
 
 
 def main():

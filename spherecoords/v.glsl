@@ -14,7 +14,7 @@ vec4 spherical(float rad, float azi, float inc) {
 }
 
 void main(void) {
-    gl_Position = proj * view * modl * spherical(rad, azi, inc);
-    gl_PointSize = 10.0;
+    gl_Position = (proj * view * modl * spherical(rad, azi, inc));
+    gl_PointSize = 4.0;
     gl_TexCoord[0] = vec4(tex, 0, 1);
 }
