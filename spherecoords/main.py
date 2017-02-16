@@ -12,7 +12,7 @@ def init():
     camera = aux.View(fov=45)
     sphere = aux.Mover()
     slate = np.full((500, 500, 3), 128, dtype=np.uint8)
-    camera.move(z=-6)
+    camera.move(z=-4)
 
 
 def generate():
@@ -156,23 +156,18 @@ def hover(point):
 
 
 def raycast(screen_point):
-    global sphere, camera
-    invproj = np.linalg.inv(camera.proj)
-    invview = np.linalg.inv(camera.transform)
-    invmodl = np.linalg.inv(sphere.transform)
     x, y = rocket.screen_to_world(screen_point)
-    #x, y, _, _ = np.dot(invproj, [x, y, -1.0, 1.0])
-    #x, y, z, _ = np.dot(invview, [x, y, -1.0, 0.0])
-    #x, y, z, _ = np.dot(invmodl, [x, y, z, 0.0])
-    x, y, z, _ = np.dot(invview, np.dot(invproj, [x, y, -1.0, 1.0]))
-    d = normalize(np.array([x, y, z]))  # direction unit vector
+    d = normalize(screen(x, y, -1.0))
     origin = np.array([0, 0, 0])
-    center = np.array([0, 0, 0])
-    radius = 1
-    #print(d)
+    center = np.array([0, 0, -4])
+    intersect(origin, d, center, 0.75)
 
+
+def intersect(origin, direction, center, radius):
+    #print(direction)
     m = origin - center
-    b = np.dot(m, d)
+    #print(m)  # distance from origin to sphere should change when zooming
+    b = np.dot(m, direction)
     c = np.dot(m, m) - radius**2
     #print(b, c)
 
@@ -182,6 +177,20 @@ def raycast(screen_point):
         print("miss")
     else:
         print("hit")
+
+
+def screen(x, y, z):
+    global sphere, camera
+    invproj = np.linalg.inv(camera.proj)
+    invview = np.linalg.inv(camera.transform)
+    #print(invview)
+    #invmodl = np.linalg.inv(sphere.transform)
+    #x, y, _, _ = np.dot(invproj, [x, y, -1.0, 1.0])
+    #x, y, z, _ = np.dot(invview, [x, y, -1.0, 0.0])
+    #x, y, z, _ = np.dot(invmodl, [x, y, z, 0.0])
+    v = [x, y, z, 1.0]
+    #return np.dot(invview, np.dot(invproj, v))[0:3]  # remove w
+    return np.dot(np.dot(v, invproj), invview)[0:3]  # remove w
 
 
 def normalize(vector):
