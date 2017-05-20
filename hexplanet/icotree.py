@@ -72,7 +72,17 @@ class Face:
         s.down_m.flip_de = s.down_e
         s.down_m.flip_ef = s.down_f
 
-        # TODO: external connections
+        # Just assume all other faces are already made and connected for now.
+        # This will run into problems when we actually run it.
+        # Other faces will not have been made at the point we try to access their attributes.
+        s.down_a.flip_fa = s.flip_fa.down_d
+        s.down_b.flip_ab = s.flip_fa.down_e
+        s.down_c.flip_bc = s.flip_fa.down_f
+        s.down_d.flip_cd = s.flip_fa.down_a
+        s.down_e.flip_de = s.flip_fa.down_b
+        s.down_f.flip_ef = s.flip_fa.down_c
+
+        # TODO: incomplete connections
 
     def tris_face(s):
         return [
