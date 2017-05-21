@@ -8,6 +8,29 @@ from math import sqrt
 # 1.down_a == 1_A
 
 
+# Some conventions used in this file:
+# Points are triplets of floats, like (1.5, 0.5, -0.5).
+# Names like a, b, and c are points.
+# Triangles are triplets of points.
+# Names like v1, v2, v3 are triangles.
+# All hexagons are flat-topped.
+
+# What the various points mean for each hexagon.
+# I'd like a more detailed graph that shows face names and links too.
+# But that would take up a lot of space.
+#      f---------a
+#     / \down_a / \
+#    /   \     /   \
+#   /     \   /     \
+#  /down_f \ /down_b \
+# e---------m---------b
+#  \down_e / \down_c /
+#   \     /   \     /
+#    \   /     \   /
+#     \ /down_d \ /
+#      d---------c
+    
+
 class Icosphere:
     def __init__(s, depth):
         # This is where faces are stored.
