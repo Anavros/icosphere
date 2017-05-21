@@ -73,20 +73,27 @@ class Icosphere:
             s.faces.append(Face(*hexpoints(v1, v2, v3)))
 
     def breadth_first_traversal(s):
-        pass
+        for face in s.faces:
+            yield face
+            # TODO: recursion
 
     def depth_first_traversal(s):
         pass
 
     def __iter__(s):
-        pass
+        for face in s.breadth_first_traversal():
+            yield face
 
     def vertex_count(s):
         pass
 
     def buffers(s):
-        pass
-
+        verts = []
+        for face in s.faces:
+            verts.append([face.a, face.b, face.c, face.d, face.e, face.f, face.m])
+        verts = np.array(verts, dtype=np.float32)
+        return verts
+            
 
 class Face:
     def __init__(s, a, b, c, d, e, f, m):
@@ -99,7 +106,7 @@ class Face:
         s.e = e
         s.f = f
         s.m = m  # the middle point
-        s.z = None  # (0, 0, 0), the origin point
+        s.z = (0, 0, 0) # the origin point
         # These are links to other faces.
         s.flip_ab = None
         s.flip_bc = None
@@ -125,7 +132,7 @@ class Face:
         s.over_m = None
 
         s.radius = 1
-        s.color = None
+        s.color = new_color()
         s.divided = False
 
     def divide(s):
@@ -254,3 +261,7 @@ def middle_hexpoints(pa, pb, pc, pd, pe, pf, m):
     e, _ = thirds(m, pe)
     f, _ = thirds(m, pf)
     return a, b, c, d, e, f, m
+
+
+def new_color():
+    return np.random.random(3)

@@ -1,2 +1,2 @@
 
-alias r='./run'
+alias r='python3 new.py'

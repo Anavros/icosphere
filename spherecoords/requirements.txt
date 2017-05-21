@@ -1,8 +1,0 @@
-
-:Planet Generator:
--> Perform ordered walks over all faces of the sphere.
--> Group adjacent faces together.
-
-:Blossom:
--> Render only local area for performance.
--> View distant landmarks as curvatured background.
