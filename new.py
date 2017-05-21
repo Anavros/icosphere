@@ -11,7 +11,7 @@ def main():
     planet = aux.Mover()
     camera = aux.View(fov=45)
     program = aux.load_shaders('shaders/vertex.glsl', 'shaders/fragment.glsl')
-    icosphere = icotree.Icosphere(1)
+    icosphere = icotree.Icosphere(2)
 
     rocket.prep(size=(512, 512))
     camera.move(z=(-6))

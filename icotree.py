@@ -152,7 +152,23 @@ class Face:
                     yield face
 
     def subdivisions(s):
-        return [s.down_a, s.down_b, s.down_c, s.down_d, s.down_e, s.down_f, s.down_m]
+        #return [s.down_a, s.down_b, s.down_c, s.down_d, s.down_e, s.down_f, s.down_m]
+        return [
+            s.down_a,
+            s.down_b,
+            s.down_c,
+            s.down_d,
+            s.down_e,
+            s.down_f,
+            s.down_m,
+            s.over_a,
+            s.over_b,
+            s.over_c,
+            s.over_d,
+            s.over_e,
+            s.over_f,
+        ]
+
 
     def divide(s, depth):
         # Create the new faces by splitting this face's points in thirds.
@@ -163,6 +179,19 @@ class Face:
         s.down_e = Face(*hexpoints(s.d, s.e, s.m))
         s.down_f = Face(*hexpoints(s.e, s.f, s.m))
         s.down_m = Face(*middle_hexpoints(s.a, s.b, s.c, s.d, s.e, s.f, s.m))
+
+        # What to do about the incomplete corner hexes?
+        # Those are shared between three parent faces.
+        # We could just have lots of duplicates for right now.
+        # The points would be in the right places.
+        # There would just be too many of them.
+        s.over_a = Face(*over_hexpoints(s.m, s.a, s.f, s.b))
+        s.over_b = Face(*over_hexpoints(s.m, s.b, s.a, s.c))
+        s.over_c = Face(*over_hexpoints(s.m, s.c, s.b, s.d))
+        s.over_d = Face(*over_hexpoints(s.m, s.d, s.c, s.e))
+        s.over_e = Face(*over_hexpoints(s.m, s.e, s.d, s.f))
+        s.over_f = Face(*over_hexpoints(s.m, s.f, s.e, s.a))
+
         s.divisions = depth
         if depth > 0:
             for face in s.subdivisions():
@@ -285,6 +314,16 @@ def middle_hexpoints(pa, pb, pc, pd, pe, pf, m):
     e, _ = thirds(m, pe)
     f, _ = thirds(m, pf)
     return a, b, c, d, e, f, m
+
+
+def over_hexpoints(parent_middle, new_middle, left, right):
+    # This makess an incomplete hexagon.
+    # But it still has to return 7 points, so it repeats.
+    # This is all temporary until I find a better solution.
+    a, _ = thirds(new_middle, parent_middle)
+    b, _ = thirds(new_middle, left)
+    c, _ = thirds(new_middle, right)
+    return a, b, c, a, b, c, new_middle
 
 
 def new_color():
