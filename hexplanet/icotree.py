@@ -1,7 +1,73 @@
 
+from math import sqrt
+
+
+# Identification Scheme:
+# 1, 1-A, 1-A-A, 1-A-A-A
+# 1.a, 1-A.a, 1-A-A.down_a
+# 1.down_a == 1_A
+
+
+class Icosphere:
+    def __init__(s, depth):
+        # This is where faces are stored.
+        # Their keys are strings that represent their position within the graph.
+        # This indirect method is used for lazy evaluation, essentially.
+        # When a face subdivides, it tries to link its divisions to the divisions
+        # of its neighbors. However, its neighbors haven't been divided yet, so
+        # those faces don't exist at that time. When string symbols are used, faces
+        # can be linked together before their positions are set.
+        #s.faces = {}
+        # Come to think of it, there might be a better way to do this.
+        # If we did two passes, one to place the points, and another to link the graph.
+        s.faces = []
+
+        # The golden mean, phi, used in construction of the initial icosahedron.
+        t = (1.0 + sqrt(5.0)) / 2.0
+        # The vertices of the icosahedron.
+        v = [
+            (-1, t, 0), (1, t, 0), (-1, -t, 0), (1, -t, 0),
+            (0, -1, t), (0, 1, t), (0, -1, -t), (0, 1, -t),
+            (t, 0, -1), (t, 0, 1), (-t, 0, -1), (-t, 0, 1),
+        ]
+        # The faces, as triplet indices into the previous list, representing triangles.
+        f = [
+            (0, 11,  5), (0,  5,  1), (0,  1,  7), (0,  7, 10), (0, 10, 11),
+            (2, 11, 10), (4,  5, 11), (9,  1,  5), (8,  7,  1), (6, 10,  7),
+            (4,  9,  5), (9,  8,  1), (8,  6,  7), (6,  2, 10), (2,  4, 11),
+            (3,  9,  4), (3,  4,  2), (3,  2,  6), (3,  6,  8), (3,  8,  9),
+        ]
+
+        for i1, i2, i3 in f:
+            v1 = v[i1]
+            v2 = v[i2]
+            v3 = v[i3]
+            # This has to be split into hexagons before we can put the faces in.
+            # Plus we have to figure out what to do with the pentagons.
+
+            # This will work temporarily.
+            # It ignores connections and pentagons, only creating the centers.
+            s.faces.append(Face(*hexpoints(v1, v2, v3)))
+
+    def breadth_first_traversal(s):
+        pass
+
+    def depth_first_traversal(s):
+        pass
+
+    def __iter__(s):
+        pass
+
+    def vertex_count(s):
+        pass
+
+    def buffers(s):
+        pass
+
 
 class Face:
     def __init__(s, a, b, c, d, e, f, m):
+        s.id = ""
         # These are points in 3D space.
         s.a = a
         s.b = b
@@ -26,9 +92,18 @@ class Face:
         s.down_e = None
         s.down_f = None
         s.down_m = None
+        # These are the incomplete faces in the corners after subdivision.
+        s.over_a = None
+        s.over_b = None
+        s.over_c = None
+        s.over_d = None
+        s.over_e = None
+        s.over_f = None
+        s.over_m = None
 
         s.radius = 1
         s.color = None
+        s.divided = False
 
     def divide(s):
         # Create the new faces by splitting this face's points in thirds.
@@ -84,6 +159,12 @@ class Face:
 
         # TODO: incomplete connections
 
+    def link_adjacent_faces(s):
+        # In a second pass, after all faces have been created and divided,
+        # connect each face's flip_xy links to its adjacent faces, creating
+        # a traversable graph.
+        pass
+
     def tris_face(s):
         return [
             (s.a, s.b, s.m),
@@ -105,24 +186,44 @@ class Face:
         ]
 
 
+# These functions will use triplets of cartesian coordinates for now.
+# I'd like to switch to spherical coords later on.
 def midpoint(a, b):
-    pass
+    """
+    Return the point halfway between a and b.
+    """
+    return (
+        (a[0]+b[0])/2,
+        (a[1]+b[1])/2,
+        (a[2]+b[2])/2 )
 
 
 def thirds(a, b):
-    pass
+    """
+    Return two points between a and b that split the line into thirds.
+    Returns two values. The first is closer to a, and the second is closer to b.
+    """
+    aab = ( (2*a[0]+b[0])/3, (2*a[1]+b[1])/3, (2*a[2]+b[2])/3 )
+    abb = ( (a[0]+b[0]*2)/3, (a[1]+b[1]*2)/3, (a[2]+b[2]*2)/3 )
+    return aab, abb
 
 
-def hexpoints(clockwise, anticlock, middle):
+def hexpoints(v1, v2, v3):
+    """
+    Return the seven points defining a hexagon inset in the given triangle.
+    """
     # You'll have to see a diagram for this to make sense.
-    f, a = thirds(clockwise, anticlock)
-    b, c = thirds(anticlock, middle)
-    d, e = thirds(middle, clockwise)
+    f, a = thirds(v1, v2)
+    b, c = thirds(v2, v3)
+    d, e = thirds(v3, v1)
     m = midpoint(b, e)
     return a, b, c, d, e, f, m
 
 
 def middle_hexpoints(pa, pb, pc, pd, pe, pf, m):
+    """
+    Return the points defining a hexagon centered within another hexagon.
+    """
     a, _ = thirds(m, pa)
     b, _ = thirds(m, pb)
     c, _ = thirds(m, pc)
