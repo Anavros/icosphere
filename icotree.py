@@ -72,6 +72,9 @@ class Icosphere:
             # This will work temporarily.
             # It ignores connections and pentagons, only creating the centers.
             s.faces.append(Face(*hexpoints(v1, v2, v3)))
+            s.faces.append(Face(*over_penpoints(v1, v2, v3)))
+            s.faces.append(Face(*over_penpoints(v2, v3, v1)))
+            s.faces.append(Face(*over_penpoints(v3, v1, v2)))
 
         for face in s.faces:
             face.divide(depth)
@@ -324,6 +327,13 @@ def over_hexpoints(parent_middle, new_middle, left, right):
     b, _ = thirds(new_middle, left)
     c, _ = thirds(new_middle, right)
     return a, b, c, a, b, c, new_middle
+
+
+def over_penpoints(v1, v2, v3):
+    # Create duplicate faces for top-level pentagons.
+    a, _ = thirds(v1, v2)
+    b, _ = thirds(v1, v3)
+    return a, b, v1, a, b, v1, v1
 
 
 def new_color():
