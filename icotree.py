@@ -73,26 +73,34 @@ class Icosphere:
             # It ignores connections and pentagons, only creating the centers.
             s.faces.append(Face(*hexpoints(v1, v2, v3)))
 
-    def breadth_first_traversal(s):
         for face in s.faces:
-            yield face
-            # TODO: recursion
+            face.divide(depth)
+
+    def breadth_first_traversal(s):
+        pass
 
     def depth_first_traversal(s):
-        pass
+        for toplevel in s.faces:
+            for face in toplevel:
+                yield face
 
     def __iter__(s):
-        for face in s.breadth_first_traversal():
-            yield face
+        pass
 
     def vertex_count(s):
-        pass
+        return sum(face.vertex_count() for face in s.faces)
 
     def buffers(s):
         verts = []
-        for face in s.faces:
-            verts.append([face.a, face.b, face.c, face.d, face.e, face.f, face.m])
-        verts = np.array(verts, dtype=np.float32)
+        verts.append((0, 0, 0))
+        for face in s.depth_first_traversal():
+            verts.append(face.a)
+            verts.append(face.b)
+            verts.append(face.c)
+            verts.append(face.d)
+            verts.append(face.e)
+            verts.append(face.f)
+            verts.append(face.m)
         return verts
             
 
@@ -134,9 +142,19 @@ class Face:
 
         s.radius = 1
         s.color = new_color()
-        s.divided = False
+        s.divisions = 0
 
-    def divide(s):
+    def __iter__(s):
+        yield s
+        if s.divisions > 0:
+            for division in s.subdivisions():
+                for face in division:
+                    yield face
+
+    def subdivisions(s):
+        return [s.down_a, s.down_b, s.down_c, s.down_d, s.down_e, s.down_f, s.down_m]
+
+    def divide(s, depth):
         # Create the new faces by splitting this face's points in thirds.
         s.down_a = Face(*hexpoints(s.f, s.a, s.m))
         s.down_b = Face(*hexpoints(s.a, s.b, s.m))
@@ -145,7 +163,12 @@ class Face:
         s.down_e = Face(*hexpoints(s.d, s.e, s.m))
         s.down_f = Face(*hexpoints(s.e, s.f, s.m))
         s.down_m = Face(*middle_hexpoints(s.a, s.b, s.c, s.d, s.e, s.f, s.m))
+        s.divisions = depth
+        if depth > 0:
+            for face in s.subdivisions():
+                face.divide(depth-1)
 
+    def link_internally(s):
         # Connect the sublevel of faces between themselves.
         s.down_a.flip_bc = s.down_b
         s.down_a.flip_cd = s.down_m
