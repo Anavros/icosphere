@@ -2,7 +2,8 @@
 from vispy import gloo, io
 import rocket
 import rocket.aux as aux
-from . import icotree
+import icotree
+import numpy as np
 
 
 def main():
