@@ -95,16 +95,33 @@ class Icosphere:
 
     def buffers(s):
         verts = []
+        index = []
+        color = []
+        color.append((0, 0, 0))
         verts.append((0, 0, 0))
+        # i = 0 is origin point
+        i = 1
         for face in s.depth_first_traversal():
-            verts.append(face.a)
-            verts.append(face.b)
-            verts.append(face.c)
-            verts.append(face.d)
-            verts.append(face.e)
-            verts.append(face.f)
-            verts.append(face.m)
-        return verts
+            verts.extend(face.vertices())
+            color.extend([face.color]*7)
+            # Indices corresponding to each vertex.
+            a, b, c, d, e, f, m = [n+i for n in range(7)]
+            index.extend([
+                a, b, m,
+                b, c, m,
+                c, d, m,
+                d, e, m,
+                e, f, m,
+                f, a, m,
+                a, b, 0,
+                b, c, 0,
+                c, d, 0,
+                d, e, 0,
+                e, f, 0,
+                f, a, 0,
+            ])
+            i += 7
+        return verts, index, color
             
 
 class Face:
@@ -171,6 +188,10 @@ class Face:
             s.over_e,
             s.over_f,
         ]
+
+
+    def vertices(s):
+        return [s.a, s.b, s.c, s.d, s.e, s.f, s.m]
 
 
     def divide(s, depth):

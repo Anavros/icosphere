@@ -11,12 +11,12 @@ def main():
     planet = aux.Mover()
     camera = aux.View(fov=45)
     program = aux.load_shaders('shaders/vertex.glsl', 'shaders/fragment.glsl')
-    icosphere = icotree.Icosphere(1)
+    icosphere = icotree.Icosphere(0)
 
     rocket.prep(size=(512, 512))
     camera.move(z=(-6))
     planet.vel = aux.Velocity()
-    planet.verts = icosphere.buffers()
+    planet.verts, planet.index, planet.color = icosphere.buffers()
     rocket.launch()
 
 
@@ -30,17 +30,25 @@ def update():
 @rocket.attach
 def draw():
     program['a_position'] = planet.verts
+    program['a_coloring'] = planet.color
     program['m_model'] = planet.transform
     program['m_view'] = camera.transform
     program['m_proj'] = camera.proj
-    program['u_color'] = (0.0, 0.0, 0.1)
-    program.draw('points')
+    #program['u_color'] = (0.1, 0.2, 0.3)
+    program.draw('triangles', gloo.IndexBuffer(planet.index))
 
 
 @rocket.attach
 def key_press(key):
-    if key == 'R':
-        pass
+    global planet
+    if key == 'W':
+        planet.vel.accel(y=1)
+    elif key == 'A':
+        planet.vel.accel(x=-1)
+    elif key == 'S':
+        planet.vel.accel(y=-1)
+    elif key == 'D':
+        planet.vel.accel(x=+1)
 
 
 @rocket.attach
