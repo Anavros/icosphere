@@ -31,6 +31,55 @@ from copy import deepcopy
 #    \   /     \   /
 #     \ /down_d \ /
 #      d---------c
+
+
+def test():
+    # The golden mean, phi, used in construction of the initial icosahedron.
+    t = (1.0 + sqrt(5.0)) / 2.0
+    # The vertices of the icosahedron.
+    v = [
+        (-1, t, 0), (1, t, 0), (-1, -t, 0), (1, -t, 0),
+        (0, -1, t), (0, 1, t), (0, -1, -t), (0, 1, -t),
+        (t, 0, -1), (t, 0, 1), (-t, 0, -1), (-t, 0, 1),
+    ]
+    # The faces, as triplet indices into the previous list, representing triangles.
+    f = [
+        (0, 11,  5), (0,  5,  1), (0,  1,  7), (0,  7, 10), (0, 10, 11),
+        (2, 11, 10), (4,  5, 11), (9,  1,  5), (8,  7,  1), (6, 10,  7),
+        (4,  9,  5), (9,  8,  1), (8,  6,  7), (6,  2, 10), (2,  4, 11),
+        (3,  9,  4), (3,  4,  2), (3,  2,  6), (3,  6,  8), (3,  8,  9),
+    ]
+    points = {
+         0: (11,  5,  1,  7, 10),
+         1: ( 5,  0,  7,  8,  9),
+         2: (11, 10,  6,  3,  4),
+         3: ( 9,  4,  2,  6,  8),
+         4: ( 5, 11,  9,  2,  3),
+         5: ( 0, 11,  1,  4,  9),
+         6: ( 8,  7,  2, 10,  3),
+         7: ( 0,  1, 10,  8,  6),
+         8: ( 7,  1,  9,  6,  3),
+         9: ( 4,  5,  1,  8,  3),
+        10: ( 0,  7, 11,  2,  6),
+        11: ( 0,  5, 10,  2,  4),
+    }
+    for i1, i2, i3 in f:
+        v1 = v[i1]
+        v2 = v[i2]
+        v3 = v[i3]
+        a, b, c, d, e, f, m = hexpoints(v1, v2, v3)
+    for point, indices in points.items():
+        i1, i2, i3, i4, i5 = indices  # this needs to be ordered manually
+        v1 = v[i1]
+        v2 = v[i2]
+        v3 = v[i3]
+        v4 = v[i4]
+        v5 = v[i5]
+        a, _ = thirds(point, v1)
+        b, _ = thirds(point, v2)
+        c, _ = thirds(point, v3)
+        d, _ = thirds(point, v4)
+        e, _ = thirds(point, v5)
     
 
 class Icosphere:
@@ -46,6 +95,7 @@ class Icosphere:
         # Come to think of it, there might be a better way to do this.
         # If we did two passes, one to place the points, and another to link the graph.
         s.faces = []
+        s.depth = depth
 
         # The golden mean, phi, used in construction of the initial icosahedron.
         t = (1.0 + sqrt(5.0)) / 2.0
@@ -62,32 +112,58 @@ class Icosphere:
             (4,  9,  5), (9,  8,  1), (8,  6,  7), (6,  2, 10), (2,  4, 11),
             (3,  9,  4), (3,  4,  2), (3,  2,  6), (3,  6,  8), (3,  8,  9),
         ]
+        points = {
+             0: ( 1,  5, 11, 10,  7),
+             1: ( 8,  9,  5,  0,  7),
+             2: (11,  4,  3,  6, 10),
+             3: ( 4,  2,  6,  8,  9),
+             4: ( 3,  9,  5, 11,  2),
+             5: ( 0,  1,  9,  4, 11),
+             6: ( 7,  8,  3,  2, 10),
+             7: ( 0,  1,  8,  6, 10),
+             8: ( 1,  9,  3,  6,  7),
+             9: ( 3,  4,  5,  1,  8),
+            10: ( 6,  7,  0, 11,  2),
+            11: ( 0,  5,  4,  2, 10),
+        }
 
         for i1, i2, i3 in f:
             v1 = v[i1]
             v2 = v[i2]
             v3 = v[i3]
-            # This has to be split into hexagons before we can put the faces in.
-            # Plus we have to figure out what to do with the pentagons.
-
-            # This will work temporarily.
-            # It ignores connections and pentagons, only creating the centers.
             s.faces.append(Face(*hexpoints(v1, v2, v3)))
-            #s.faces.append(Face(*over_penpoints(v1, v2, v3), incomplete=True))
-            #s.faces.append(Face(*over_penpoints(v2, v3, v1), incomplete=True))
-            #s.faces.append(Face(*over_penpoints(v3, v1, v2), incomplete=True))
 
+        for point, indices in points.items():
+            i1, i2, i3, i4, i5 = indices  # this needs to be ordered manually
+            vm = v[point]
+            v1 = v[i1]
+            v2 = v[i2]
+            v3 = v[i3]
+            v4 = v[i4]
+            v5 = v[i5]
+            a, _ = thirds(vm, v1)
+            b, _ = thirds(vm, v2)
+            c, _ = thirds(vm, v3)
+            d, _ = thirds(vm, v4)
+            e, _ = thirds(vm, v5)
+            s.faces.append(Face(a, b, c, d, e, e, vm))
 
         for face in s.faces:
-            face.divide(depth)
+            face.divide(depth, depth)
 
     def breadth_first_traversal(s):
         pass
 
-    def depth_first_traversal(s):
+    def faces_at_level(s, level):
         for toplevel in s.faces:
-            for face in toplevel:
+            for face in toplevel.faces_at_level(level):
                 yield face
+
+    def depth_first_traversal(s):
+        if level is None:
+            for toplevel in s.faces:
+                for face in toplevel:
+                    yield face
 
     def __iter__(s):
         pass
@@ -95,13 +171,14 @@ class Icosphere:
     def vertex_count(s):
         return sum(face.vertex_count() for face in s.faces)
 
-    def buffers(s):
+    def buffers(s, level=None):
+        if level is None: level = s.depth
         verts = [(0, 0, 0)]
         color = [(0, 0, 0)]
         index = [0]
         # i = 0 is origin point
         i = 1
-        for face in s.depth_first_traversal():
+        for face in s.faces_at_level(level):
             verts.extend(face.vertices())
             color.extend([face.color]*7)
             # Indices corresponding to each vertex.
@@ -125,7 +202,7 @@ class Icosphere:
             
 
 class Face:
-    def __init__(s, a, b, c, d, e, f, m, incomplete=False):
+    def __init__(s, a, b, c, d, e, f, m, color=None):
         s.id = ""
         # These are points in 3D space.
         s.a = a
@@ -136,7 +213,6 @@ class Face:
         s.f = f
         s.m = m  # the middle point
         s.z = (0, 0, 0) # the origin point
-        s.incomplete = incomplete
         # These are links to other faces.
         s.flip_ab = None
         s.flip_bc = None
@@ -162,8 +238,21 @@ class Face:
         s.over_m = None
 
         s.radius = 1
-        s.color = new_color()
+        if color is None:
+            s.color = new_color()
+        else:
+            s.color = color
+        s.level = None
         s.divisions = 0
+
+    def faces_at_level(s, level):
+        if s.level == level:
+            yield s
+        if s.divisions > 0:
+            for division in s.subdivisions():
+                for face in division:
+                    if face.level == level:
+                        yield face
 
     def __iter__(s):
         yield s
@@ -182,12 +271,12 @@ class Face:
             s.down_e,
             s.down_f,
             s.down_m,
-            s.over_a,
-            s.over_b,
-            s.over_c,
-            s.over_d,
-            s.over_e,
-            s.over_f,
+            #s.over_a,
+            #s.over_b,
+            #s.over_c,
+            #s.over_d,
+            #s.over_e,
+            #s.over_f,
         ]
 
 
@@ -195,7 +284,7 @@ class Face:
         return [s.a, s.b, s.c, s.d, s.e, s.f, s.m]
 
 
-    def divide(s, depth):
+    def divide(s, n_levels, depth):
         # Create the new faces by splitting this face's points in thirds.
         s.down_a = Face(*hexpoints(s.f, s.a, s.m))
         s.down_b = Face(*hexpoints(s.a, s.b, s.m))
@@ -210,17 +299,19 @@ class Face:
         # We could just have lots of duplicates for right now.
         # The points would be in the right places.
         # There would just be too many of them.
-        s.over_a = Face(*over_hexpoints(s.m, s.a, s.f, s.b))
-        s.over_b = Face(*over_hexpoints(s.m, s.b, s.a, s.c))
-        s.over_c = Face(*over_hexpoints(s.m, s.c, s.b, s.d))
-        s.over_d = Face(*over_hexpoints(s.m, s.d, s.c, s.e))
-        s.over_e = Face(*over_hexpoints(s.m, s.e, s.d, s.f))
-        s.over_f = Face(*over_hexpoints(s.m, s.f, s.e, s.a))
+        #s.over_a = Face(*over_hexpoints(s.m, s.a, s.f, s.b))
+        #s.over_b = Face(*over_hexpoints(s.m, s.b, s.a, s.c))
+        #s.over_c = Face(*over_hexpoints(s.m, s.c, s.b, s.d))
+        #s.over_d = Face(*over_hexpoints(s.m, s.d, s.c, s.e))
+        #s.over_e = Face(*over_hexpoints(s.m, s.e, s.d, s.f))
+        #s.over_f = Face(*over_hexpoints(s.m, s.f, s.e, s.a))
+        # We're going to do this in another pass.
 
         s.divisions = depth
+        s.level = n_levels - depth
         if depth > 0:
             for face in s.subdivisions():
-                face.divide(depth-1)
+                face.divide(n_levels, depth-1)
 
     def link_internally(s):
         # Connect the sublevel of faces between themselves.
