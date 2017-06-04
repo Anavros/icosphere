@@ -1,6 +1,7 @@
 
-from math import sqrt
 import numpy as np
+from math import sqrt
+from copy import deepcopy
 
 
 # Identification Scheme:
@@ -72,9 +73,10 @@ class Icosphere:
             # This will work temporarily.
             # It ignores connections and pentagons, only creating the centers.
             s.faces.append(Face(*hexpoints(v1, v2, v3)))
-            s.faces.append(Face(*over_penpoints(v1, v2, v3)))
-            s.faces.append(Face(*over_penpoints(v2, v3, v1)))
-            s.faces.append(Face(*over_penpoints(v3, v1, v2)))
+            #s.faces.append(Face(*over_penpoints(v1, v2, v3), incomplete=True))
+            #s.faces.append(Face(*over_penpoints(v2, v3, v1), incomplete=True))
+            #s.faces.append(Face(*over_penpoints(v3, v1, v2), incomplete=True))
+
 
         for face in s.faces:
             face.divide(depth)
@@ -94,11 +96,9 @@ class Icosphere:
         return sum(face.vertex_count() for face in s.faces)
 
     def buffers(s):
-        verts = []
-        index = []
-        color = []
-        color.append((0, 0, 0))
-        verts.append((0, 0, 0))
+        verts = [(0, 0, 0)]
+        color = [(0, 0, 0)]
+        index = [0]
         # i = 0 is origin point
         i = 1
         for face in s.depth_first_traversal():
@@ -125,7 +125,7 @@ class Icosphere:
             
 
 class Face:
-    def __init__(s, a, b, c, d, e, f, m):
+    def __init__(s, a, b, c, d, e, f, m, incomplete=False):
         s.id = ""
         # These are points in 3D space.
         s.a = a
@@ -136,6 +136,7 @@ class Face:
         s.f = f
         s.m = m  # the middle point
         s.z = (0, 0, 0) # the origin point
+        s.incomplete = incomplete
         # These are links to other faces.
         s.flip_ab = None
         s.flip_bc = None
@@ -344,17 +345,19 @@ def over_hexpoints(parent_middle, new_middle, left, right):
     # This makess an incomplete hexagon.
     # But it still has to return 7 points, so it repeats.
     # This is all temporary until I find a better solution.
+    z = (0, 0, 0)
     a, _ = thirds(new_middle, parent_middle)
     b, _ = thirds(new_middle, left)
     c, _ = thirds(new_middle, right)
-    return a, b, c, a, b, c, new_middle
+    return a, b, c, z, z, z, new_middle
 
 
 def over_penpoints(v1, v2, v3):
     # Create duplicate faces for top-level pentagons.
+    z = (0, 0, 0)
     a, _ = thirds(v1, v2)
     b, _ = thirds(v1, v3)
-    return a, b, v1, a, b, v1, v1
+    return a, b, v1, z, z, z, v1
 
 
 def new_color():

@@ -4,6 +4,7 @@ import rocket
 import rocket.aux as aux
 import icotree
 import numpy as np
+from uuid import uuid4
 
 
 def main():
@@ -49,6 +50,10 @@ def key_press(key):
         planet.vel.accel(y=-1)
     elif key == 'D':
         planet.vel.accel(x=+1)
+    elif key == 'P':
+        path = '/home/john/media/pictures/'+str(uuid4())+'.png'
+        print("Saving screenshot to '{}'...".format(path))
+        rocket.screenshot(path)
 
 
 @rocket.attach
