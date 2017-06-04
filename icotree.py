@@ -202,17 +202,26 @@ class Icosphere:
             
 
 class Face:
-    def __init__(s, a, b, c, d, e, f, m, color=None):
+    def __init__(s, a, b, c, d, e, f, m, color=None, normalize=True):
         s.id = ""
         # These are points in 3D space.
-        s.a = a
-        s.b = b
-        s.c = c
-        s.d = d
-        s.e = e
-        s.f = f
-        s.m = m  # the middle point
         s.z = (0, 0, 0) # the origin point
+        if normalize:
+            s.a = norm(*a)
+            s.b = norm(*b)
+            s.c = norm(*c)
+            s.d = norm(*d)
+            s.e = norm(*e)
+            s.f = norm(*f)
+            s.m = norm(*m)
+        else:
+            s.a = a
+            s.b = b
+            s.c = c
+            s.d = d
+            s.e = e
+            s.f = f
+            s.m = m  # the middle point
         # These are links to other faces.
         s.flip_ab = None
         s.flip_bc = None
@@ -443,13 +452,10 @@ def over_hexpoints(parent_middle, new_middle, left, right):
     return a, b, c, z, z, z, new_middle
 
 
-def over_penpoints(v1, v2, v3):
-    # Create duplicate faces for top-level pentagons.
-    z = (0, 0, 0)
-    a, _ = thirds(v1, v2)
-    b, _ = thirds(v1, v3)
-    return a, b, v1, z, z, z, v1
-
-
 def new_color():
     return np.random.random(3)
+
+
+def norm(x, y, z):
+    l = sqrt(sum([x*x, y*y, z*z]))
+    return x/l, y/l, z/l
